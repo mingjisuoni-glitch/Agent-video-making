@@ -9,17 +9,18 @@
 - [video-skill-library.md](video-skill-library.md)：按任务内容选择技能与创意检查。
 - [visual-styles.md](visual-styles.md)、[motion-library.md](motion-library.md)：两个默认视觉方向、自定义风格规则和动效转译参考。
 - [docs/voice-workflow.md](docs/voice-workflow.md)：配音制作顺序与接口边界。
+- [LICENSE.md](LICENSE.md)、[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)：分范围授权和第三方工具、模型、服务说明。
 - `voice/`：火山引擎与本地 Qwen3-TTS 的统一调用接口。
 
 **制作视频前，先配置 HyperFrames 环境。**在将本方法库交给 Codex、Qwen Code、WorkBuddy 或其他可操作本地工程的 agent 时，先确保其工作环境能访问项目文件和终端，并已准备 Node.js、HyperFrames CLI 及对应的 HyperFrames Skill。再按 [下载后准备与演练](docs/getting-started.md) 完成本地预检和新工程初始化。本仓库是方法库，没有视频组合或渲染工程；下载它本身不会配置好 HyperFrames，也不能直接渲染视频。
 
 下载者需按自己的内容重新确认每条视频的参数、素材许可、视觉风格和配音方式。默认风格是剧情解说风、极简产品风，也可自行添加。配音方式为无配音、火山语音 API 或本地 Qwen3-TTS；后两者需选择具体音色。Skill、HyperFrames、语音模型以及云服务账号由下载者自行安装或配置。
 
-现有项目登记过 Kokoro 和 Qwen3-TTS 音色；这个接口先实现你指定的火山引擎与本地 Qwen3-TTS 两个后端。Kokoro 音色配方不属于这两个后端，不能通过改一个音色 ID 直接使用；后续可按同一契约增加 Kokoro 适配器。仓库的对外许可证尚未确定。
+现有项目登记过 Kokoro 和 Qwen3-TTS 音色；这个接口先实现你指定的火山引擎与本地 Qwen3-TTS 两个后端。Kokoro 音色配方不属于这两个后端，不能通过改一个音色 ID 直接使用；后续可按同一契约增加 Kokoro 适配器。各文件的对外授权见 [LICENSE.md](LICENSE.md)。
 
 ## 配音接口
 
-**使用范围：仅本项目提供的配音方案不可用于商业用途。**这项限制不适用于仓库内的视频制作规则、方案模板、风格和动效文档。具体配音模型、音色及 API 的使用条件请参考 [配音使用说明](docs/voice-workflow.md)所列官方资料；第三方许可与本项目的配音限制分别适用。仓库其他内容的对外许可尚未确定。
+**使用范围：仅本项目提供的配音方案不可用于商业用途。**这项限制不适用于仓库内的视频制作规则、方案模板、风格和动效文档；这些通用文件按 [LICENSE.md](LICENSE.md) 中的 Apache-2.0 条款授权。配音代码、示例配置和使用说明分别按该文件列明的非商业许可授权。具体模型、音色及 API 的条件见 [第三方说明](THIRD_PARTY_NOTICES.md)。
 
 ### 统一流程
 
