@@ -20,7 +20,7 @@ python -m unittest discover -s tests -q
 在准备用于制作视频的电脑或 agent 工作环境中，先完成以下准备：
 
 1. 安装 Node.js 和 npm，确认 `node --version` 与 `npm --version` 可运行。
-2. 按 [HyperFrames 官方文档索引](https://hyperframes.heygen.com/llms.txt)安装或调用 HyperFrames CLI，并安装当前任务所需的 HyperFrames Skill。具体安装命令与版本以当前官方文档和所用 agent 的 Skill 机制为准。
+2. 按 [HyperFrames 官方文档索引](https://hyperframes.mintlify.app/llms.txt)安装或调用 HyperFrames CLI，并安装当前任务所需的 HyperFrames Skill。具体安装命令与版本以当前官方文档和所用 agent 的 Skill 机制为准。
 3. 确认 agent 能读取、修改本地项目文件并执行终端命令；把本仓库的 `AGENTS.md`、方案模板和技能路由交给它阅读。不同 agent 对规则文件和 Skill 的自动加载方式可能不同，不能仅凭下载本仓库就假定它已加载这些规则。
 4. 在**另建的 HyperFrames 视频工程**中完成初始化，并验证 CLI 能识别工程、预览和检查命令可运行。检查命令应在视频工程目录执行，不能在本方法库目录执行：本方法库没有 `package.json` 或 `index.html`。
 
@@ -30,7 +30,7 @@ python -m unittest discover -s tests -q
 
 阅读 [制作规则](../AGENTS.md)、[方案模板](../VIDEO_DESCRIPTION_TEMPLATE.md)和[风格库](../visual-styles.md)。按自己的题材确认比例、时长、风格、配音方式；两个默认风格是剧情解说风和极简产品风，也可新增。完成文本拆解、精修、分镜及素材计划后，把方案交给使用者明确确认。获批前不调用 TTS 或视频生成服务。
 
-要实际制作 HyperFrames 视频，另建 HyperFrames 工程并在其中制作组合；本方法库不带 `package.json`、`index.html` 或成片。HyperFrames 的安装和初始化以其[机器可读文档索引](https://hyperframes.heygen.com/llms.txt)及对应 Skill 为准。视频素材、字体及使用许可也由新项目准备。
+要实际制作 HyperFrames 视频，另建 HyperFrames 工程并在其中制作组合；本方法库不带 `package.json`、`index.html` 或成片。HyperFrames 的安装和初始化以其[机器可读文档索引](https://hyperframes.mintlify.app/llms.txt)及对应 Skill 为准。视频素材、字体及使用许可也由新项目准备。
 
 ## 4A. 选择“无配音”
 
