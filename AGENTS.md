@@ -22,6 +22,7 @@
 
 ## 工具与交付
 
+- 实际创建或修改 HyperFrames 视频工程前，先配置并验证 Node.js、HyperFrames CLI、所需 Skill，以及 agent 的本地文件与终端权限。方法库不包含可运行的 HyperFrames 工程；具体准备顺序见 [下载后准备](docs/getting-started.md)。
 - 按 [技能路由](video-skill-library.md)选择当前环境实际安装的工具。外部 Skill 不是本仓库的依赖副本，下载者须自行安装或替换。
 - 修改 HyperFrames HTML 组合前先读对应的 HyperFrames Skill。定时元素使用 `class="clip"` 和 `data-start`、`data-duration`、`data-track-index`；GSAP 时间线暂停并注册在 `window.__timelines`。
 - 修改组合后运行项目的完整检查命令，修复错误并复查警告；最终渲染前执行技能路由中的创意检查和音画同步审计。
