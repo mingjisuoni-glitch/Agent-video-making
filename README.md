@@ -11,7 +11,7 @@
 - [docs/voice-workflow.md](docs/voice-workflow.md)：配音制作顺序与接口边界。
 - `voice/`：火山引擎与本地 Qwen3-TTS 的统一调用接口。
 
-首次下载后，请先按 [下载后准备与演练](docs/getting-started.md) 完成本地预检。这个仓库是方法库，没有视频组合或渲染工程；制作具体视频时需要另建工程并提供自己的内容与素材。
+**制作视频前，先配置 HyperFrames 环境。**在将本方法库交给 Codex、Qwen Code、WorkBuddy 或其他可操作本地工程的 agent 时，先确保其工作环境能访问项目文件和终端，并已准备 Node.js、HyperFrames CLI 及对应的 HyperFrames Skill。再按 [下载后准备与演练](docs/getting-started.md) 完成本地预检和新工程初始化。本仓库是方法库，没有视频组合或渲染工程；下载它本身不会配置好 HyperFrames，也不能直接渲染视频。
 
 下载者需按自己的内容重新确认每条视频的参数、素材许可、视觉风格和配音方式。默认风格是剧情解说风、极简产品风，也可自行添加。配音方式为无配音、火山语音 API 或本地 Qwen3-TTS；后两者需选择具体音色。Skill、HyperFrames、语音模型以及云服务账号由下载者自行安装或配置。
 
