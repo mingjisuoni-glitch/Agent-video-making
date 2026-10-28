@@ -12,7 +12,7 @@
 | 新机环境体检与渲染前预检 | API Key、云服务账号或已开通资源 |
 | 12 秒、三镜、无配音的 HyperFrames 样例 | Qwen 模型权重、试听音频或人物声音授权 |
 | 火山与 Qwen3-TTS 的统一 CLI | 自动替用户决定音色、许可或商业可用性 |
-| 最终音频到停顿字幕的工具 | 无需确认方案即可自动生成整条视频的承诺 |
+| 最终音频→停顿字幕→HyperFrames 工程与交付清单工具 | 无需确认方案即可自动生成整条视频的承诺 |
 
 ## 开始之前
 
@@ -36,6 +36,12 @@ npm run check
 npm run make
 ```
 
+带配音的 20 秒链路样例不会提交音频或渲染视频；在安装 `espeak-ng` 后运行：
+
+```bash
+bash examples/voiced-demo/scripts/build.sh
+```
+
 首次安装依赖和浏览器需要联网；依赖缓存完成后，该样例不需要 API Key、配音模型或远程素材即可本地检查与渲染。
 
 ## 仓库结构
@@ -46,7 +52,9 @@ npm run make
 - [docs/skill-sources.md](docs/skill-sources.md)：每个 Skill 的公开上游、安装命令、许可证、平台限制与替代路径。
 - [visual-styles.md](visual-styles.md)、[motion-library.md](motion-library.md)：默认视觉方向、自定义风格和动效转译参考。
 - [docs/install.md](docs/install.md)：Windows、macOS、Linux 新机安装与分级验收。
+- [video.schema.json](video.schema.json)：`video-plan.json` 的结构唯一真源；`avm-preflight` 在此基础上检查跨字段和产物证据。
 - [examples/hello-video](examples/hello-video)：可检查、可渲染的最小 HyperFrames 工程。
+- [examples/voiced-demo](examples/voiced-demo)：本地生成 20 秒语音、字幕并组装工程，只运行严格检查。
 - `tools/`：环境体检、Skill 清单检查和视频预检。
 - `voice/`：火山语音、本地 Qwen3-TTS、批量合成规划与字幕分组。
 - [LICENSE.md](LICENSE.md)、[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)：分范围授权与第三方条件。
@@ -56,9 +64,10 @@ npm run make
 1. 确认比例与分辨率、时长、视觉方向、配音方式与具体音色。
 2. 对文案逐句拆解并做视频适配精修；锁定分镜、素材和声音计划。
 3. 使用 [制作方案模板](VIDEO_DESCRIPTION_TEMPLATE.md)提交方案，等待明确批准。
-4. 运行 `avm-preflight video-plan.json`；失败时不进入渲染。
-5. 需要旁白时，以批准后的同一版文案生成最终音频，再做词级转写和停顿字幕。
-6. 对 HyperFrames 工程运行完整 `check`、人工预览和音画审计；最终批准后再渲染。
+4. 运行 `avm-preflight video-plan.json`；schema、语义或证据失败时不进入制作。
+5. 需要旁白时，以批准后的同一版文案生成最终音频，再做词级转写和停顿字幕；用 `avm-assemble` 生成字幕边界对齐的 HyperFrames 工程。
+6. 运行 `hyperframes check --strict --json`，再用 `avm-preflight video-plan.json --with-checks <report.json>` 把真实报告纳入门禁；人工预览和音画审计通过后再渲染。
+7. 用 `avm-manifest` 从最终视频、音频、字幕 sidecar、检查报告、环境和 Skill 清单生成可追溯交付记录。
 
 ## 配音接口
 
@@ -76,7 +85,16 @@ avm-voice --voices voices.example.json --batch examples/segments.example.jsonl -
 
 # 最终音频完成后生成停顿字幕
 avm-captions --audio outputs/final.wav --model small --language zh
+
+# 用真实音频时长和字幕停顿边界组装工程
+avm-assemble scenes.json --out out/my-video
+
+# 渲染后生成交付清单；也可用 --checks 显式指定报告
+avm-manifest --plan video-plan.json --video out/my-video.mp4 \
+  --audio outputs/final.wav --captions outputs/captions.json -o delivery.json
 ```
+
+`avm-voice` 与 `avm-captions` 会在产物旁写入 `*.avm.json` provenance sidecar。交付清单会核对实际文件哈希；旧产物缺 sidecar 或已被改写时必须重新生成或人工补做经审核的来源记录。
 
 完整边界和批量/断点说明见 [配音工作流](docs/voice-workflow.md)。
 

@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 from voice.cli import (
     _duration_seconds,
+    _model_provenance,
+    _synthesize,
     execute_batch,
     file_sha256,
     load_profiles,
@@ -129,6 +131,66 @@ class VoiceCliFeatureTests(unittest.TestCase):
             report = execute_batch(rows, profiles, "demo", False, factory, lambda _path: 1.0)
             self.assertEqual(len(created), 1)
             self.assertEqual([item["status"] for item in report], ["completed", "completed"])
+
+    def test_batch_sidecar_captures_voice_runtime_and_model_hashes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            model_dir = root / "model"
+            model_dir.mkdir()
+            (model_dir / "config.json").write_text('{"model":"demo"}', encoding="utf-8")
+            (model_dir / "model.safetensors").write_bytes(b"weights")
+            output = root / "voice.wav"
+            spec = VoiceSpec("qwen3-local", "Vivian")
+
+            class FakeProvider:
+                def synthesize(self, _text, voice, path):
+                    path.write_bytes(b"audio")
+                    return SynthesisResult(path, voice.provider, voice.speaker, "wav", 24000)
+
+            with patch.dict(os.environ, {"QWEN3_TTS_MODEL_DIR": str(model_dir)}):
+                execute_batch(
+                    [{"id": "001", "text": "测试", "output": str(output)}],
+                    {"demo": spec}, "demo", False, lambda _spec: FakeProvider(),
+                    lambda _path: 1.25,
+                )
+            sidecar = json.loads(Path(f"{output}.avm.json").read_text(encoding="utf-8"))
+            self.assertEqual(sidecar["provider"], "qwen3-local")
+            self.assertEqual(sidecar["speaker"], "Vivian")
+            self.assertEqual(sidecar["voice_id"], "demo")
+            self.assertEqual(sidecar["duration_seconds"], 1.25)
+            self.assertRegex(sidecar["runtime"]["model_sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(sidecar["runtime"]["head_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_single_synthesis_writes_same_provenance_sidecar(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "voice.mp3"
+            spec = VoiceSpec("volcano", "speaker-x", resource_id="seed-tts-2.0")
+
+            class FakeProvider:
+                def synthesize(self, _text, voice, path):
+                    path.write_bytes(b"audio")
+                    return SynthesisResult(path, voice.provider, voice.speaker, "mp3", 24000)
+
+            _synthesize(
+                "测试", spec, "cloud-demo", output,
+                provider_factory=lambda _spec: FakeProvider(),
+                duration_reader=lambda _path: 0.75,
+            )
+            sidecar = json.loads(Path(f"{output}.avm.json").read_text(encoding="utf-8"))
+            self.assertEqual(sidecar["voice_id"], "cloud-demo")
+            self.assertEqual(sidecar["provider"], "volcano")
+            self.assertEqual(sidecar["audio_sha256"], file_sha256(output))
+
+    def test_qwen_provenance_aggregates_full_and_head_model_hashes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            model_dir = Path(folder)
+            (model_dir / "config.json").write_text('{"revision":1}', encoding="utf-8")
+            (model_dir / "model.safetensors").write_bytes(b"weights")
+            with patch.dict(os.environ, {"QWEN3_TTS_MODEL_DIR": str(model_dir)}):
+                provenance = _model_provenance(VoiceSpec("qwen3-local", "Vivian"))
+            self.assertRegex(provenance["model_sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(provenance["head_sha256"], r"^[0-9a-f]{64}$")
+            self.assertIn("sha256", provenance["model_files"][0])
 
 
 if __name__ == "__main__":

@@ -26,5 +26,7 @@
 - 按 [技能路由](video-skill-library.md)选择当前环境实际安装的工具。外部 Skill 不是本仓库的依赖副本；先运行 `python -m tools.fetch_skills --check` 核对 [Skill 清单](skills/manifest.json)，再按 [Skill 来源与安装渠道](docs/skill-sources.md)安装。未明确许可的可选项须人工复核后再安装或替换。
 - 修改 HyperFrames HTML 组合前先读对应的 HyperFrames Skill。定时元素使用 `class="clip"` 和 `data-start`、`data-duration`、`data-track-index`；GSAP 时间线暂停并注册在 `window.__timelines`。
 - 修改组合后运行项目的完整检查命令，修复错误并复查警告；最终渲染前执行技能路由中的创意检查和音画同步审计。
-- 交付时记录输入版本、素材来源、生成参数、最终音频、词级时间戳、检查结果和输出规格。凭据、私有素材、模型权重及临时文件留在仓库外或被忽略。
+- 有声工程使用 `avm-assemble scenes.json --out <project>` 将最终音频和停顿字幕连接为 HyperFrames 工程；不得手填总时长或把镜头切点移出字幕组边界。
+- 严格检查后运行 `avm-preflight <plan> --with-checks <report.json>`；只接受 `ok=true`、`strict=true`、`browserSkipped=false` 的真实报告。
+- 交付时运行 `avm-manifest --plan ... --video ... --audio ... --captions ... -o delivery.json`，由工具记录输入版本、音频/字幕 provenance、Skill 固定版本、检查结果、环境和输出规格。凭据、私有素材、模型权重及临时文件留在仓库外或被忽略。
 

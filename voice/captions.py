@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
 import subprocess
 from pathlib import Path
+
+from tools.artifacts import sha256_file, write_json_atomic
 
 PAUSE_GAP = 0.28
 MAX_CHARS = 18
@@ -125,6 +128,18 @@ def main(argv: list[str] | None = None) -> int:
     args.json_output.write_text(json.dumps(groups, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     args.srt_output.write_text(format_srt(groups), encoding="utf-8")
     long_groups = sum(bool(item["over_limit"]) for item in groups)
+    canonical = json.dumps(
+        words, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    write_json_atomic(Path(f"{args.json_output}.avm.json"), {
+        "schema_version": 1,
+        "kind": "captions",
+        "source_kind": "audio" if args.audio else "transcript",
+        "groups": len(groups),
+        "over_limit": long_groups,
+        "transcript_sha256": hashlib.sha256(canonical).hexdigest(),
+        "captions_sha256": sha256_file(args.json_output),
+    })
     print(json.dumps({"groups": len(groups), "over_limit": long_groups}, ensure_ascii=False))
     return 2 if long_groups else 0
 

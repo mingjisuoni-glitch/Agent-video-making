@@ -3,18 +3,22 @@
   "resolution": "1080x1920",
   "duration_seconds": 12,
   "fps": 30,
+  "total_frames": 360,
   "style": {"id": "minimal-product", "confirmed": true},
   "voice": {"mode": "none", "confirmed": true},
   "approval": {"plan_approved": true},
   "creative_checks": {
-    "no_static_card_sequence": true,
-    "action_per_narrative_unit": true,
-    "motivated_transitions": true,
-    "captions_synced_to_final_audio": true,
-    "license_reviewed": true,
-    "layered_assets_ready": true,
-    "three_state_shots": true,
-    "final_audio_locked": true
+    "no_static_card_sequence": {"ok": true, "evidence": "evidence/creative-review.json"},
+    "action_per_narrative_unit": {"ok": true, "evidence": "evidence/creative-review.json"},
+    "motivated_transitions": {"ok": true, "evidence": "evidence/creative-review.json"},
+    "captions_synced_to_final_audio": {
+      "ok": true,
+      "evidence": "evidence/captions.json",
+      "groups": 0
+    },
+    "license_reviewed": {"ok": true, "evidence": "evidence/creative-review.json"},
+    "layered_assets_ready": {"ok": true, "evidence": "evidence/creative-review.json"},
+    "three_state_shots": {"ok": true, "evidence": "evidence/creative-review.json"},
+    "final_audio_locked": {"ok": true, "evidence": "evidence/no-audio.json"}
   }
 }
-

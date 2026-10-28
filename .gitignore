@@ -17,8 +17,11 @@ duration-report.json
 dist/
 build/
 *.egg-info/
+.superpowers/
 *.wav
 *.mp3
 *.ogg
 *.pcm
+examples/voiced-demo/build/
+examples/voiced-demo/generated/
 

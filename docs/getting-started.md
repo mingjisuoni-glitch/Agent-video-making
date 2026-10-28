@@ -35,7 +35,7 @@ npm run check
 avm-preflight my-video-plan.json
 ```
 
-通过只表示确认项与检查记录齐全；仍须人工核对事实、素材许可、旁白听感、字幕停顿和最终预览。
+方案结构以 `video.schema.json` 为唯一真源；八项创意检查必须引用真实证据文件。通过只表示当前结构、语义与证据自洽；仍须人工核对事实、素材许可、旁白听感、字幕停顿和最终预览。
 
 ## 4. 配音和字幕
 
@@ -55,3 +55,30 @@ avm-captions --audio outputs/final.wav --model small --language zh
 ```
 
 字幕工具按真实停顿分组；它不会为了满足固定字数擅自拆开一个没有停顿的口播单位。
+
+## 5. 组装、严格检查与交付清单
+
+准备 `scenes.json`（可复制 `examples/voiced-demo/scenes.json`）后执行：
+
+```bash
+avm-assemble scenes.json --out out/my-video
+cd out/my-video
+npm install
+npm run check -- --json
+```
+
+使用该命令保存的 `.hyperframes/artifacts/checks/<id>.json` 重新运行最终门禁：
+
+```bash
+avm-preflight ../../my-video-plan.json --with-checks .hyperframes/artifacts/checks/<id>.json
+```
+
+人工审看和最终渲染完成后，在仓库根目录生成交付清单：
+
+```bash
+avm-manifest --plan my-video-plan.json --video out/my-video/out/video.mp4 \
+  --audio outputs/final.wav --captions outputs/captions.json \
+  --checks out/my-video/.hyperframes/artifacts/checks/<id>.json -o delivery.json
+```
+
+音频和字幕命令会自动生成同名 `*.avm.json` 来源记录；不要在生成 sidecar 后替换对应产物，否则交付清单会因哈希不一致而拒绝。
