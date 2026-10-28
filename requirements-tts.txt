@@ -1,0 +1,4 @@
+# Install only inside a dedicated virtual environment.
+qwen-tts==0.1.1
+soundfile>=0.12,<0.14
+

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "skills": {
+    "hyperframes": {
+      "required": true,
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/heygen-com/hyperframes.git",
+        "commit": "8b1f88b3c06175f43fbdbe1af6e53933847cb195",
+        "cli_version": "0.8.210"
+      },
+      "license": "Apache-2.0",
+      "install_hint": "npx hyperframes@0.8.210 skills update hyperframes"
+    },
+    "cinematic-director": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "cinematic-director"},
+      "license": "CHECK_BEFORE_USE"
+    },
+    "video-shotcraft": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "video-shotcraft"},
+      "license": "CHECK_BEFORE_USE"
+    },
+    "reverse-video-prompts": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "reverse-video-prompts"},
+      "license": "CHECK_BEFORE_USE"
+    },
+    "imagegen": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "imagegen"},
+      "license": "CHECK_BEFORE_USE"
+    },
+    "h3-prompt-writing": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "h3-prompt-writing"},
+      "license": "CHECK_BEFORE_USE"
+    },
+    "minimax-h3": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "minimax-h3"},
+      "license": "CHECK_BEFORE_USE"
+    },
+    "motion-design": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "motion-design"},
+      "license": "CHECK_BEFORE_USE"
+    },
+    "remotion": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "remotion"},
+      "license": "CHECK_BEFORE_USE"
+    },
+    "video-editing": {
+      "required": false,
+      "source": {"type": "agent-managed", "name": "video-editing"},
+      "license": "CHECK_BEFORE_USE"
+    }
+  }
+}
+

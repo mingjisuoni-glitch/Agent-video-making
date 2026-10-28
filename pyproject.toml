@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-video-making"
+version = "0.1.0"
+description = "Reusable video-production rules, plan templates, environment checks, and provider-independent TTS tools"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "mingjisuoni-glitch"}]
+dependencies = []
+
+[project.optional-dependencies]
+tts = ["qwen-tts==0.1.1", "soundfile>=0.12,<0.14"]
+
+[project.scripts]
+avm-voice = "voice.cli:main"
+avm-captions = "voice.captions:main"
+avm-doctor = "tools.doctor:main"
+avm-preflight = "tools.preflight_video:main"
+
+[tool.setuptools]
+packages = ["voice", "tools"]
+

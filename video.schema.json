@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mingjisuoni-glitch/Agent-video-making/video.schema.json",
+  "title": "Agent Video Making render preflight",
+  "type": "object",
+  "required": ["ratio", "resolution", "duration_seconds", "fps", "style", "voice", "approval", "creative_checks"],
+  "properties": {
+    "ratio": {"type": "string", "minLength": 3},
+    "resolution": {"type": "string", "pattern": "^[0-9]+x[0-9]+$"},
+    "duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+    "fps": {"type": "number", "exclusiveMinimum": 0},
+    "style": {
+      "type": "object",
+      "required": ["id", "confirmed"],
+      "properties": {"id": {"type": "string", "minLength": 1}, "confirmed": {"const": true}}
+    },
+    "voice": {
+      "type": "object",
+      "required": ["mode", "confirmed"],
+      "properties": {
+        "mode": {"enum": ["none", "volcano", "qwen3-local"]},
+        "voice_id": {"type": "string"},
+        "confirmed": {"const": true}
+      }
+    },
+    "approval": {
+      "type": "object",
+      "required": ["plan_approved"],
+      "properties": {"plan_approved": {"const": true}}
+    },
+    "creative_checks": {
+      "type": "object",
+      "required": [
+        "no_static_card_sequence", "action_per_narrative_unit", "motivated_transitions",
+        "captions_synced_to_final_audio", "license_reviewed", "layered_assets_ready",
+        "three_state_shots", "final_audio_locked"
+      ],
+      "additionalProperties": {"type": "boolean"}
+    }
+  }
+}
+

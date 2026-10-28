@@ -1,0 +1,20 @@
+{
+  "ratio": "9:16",
+  "resolution": "1080x1920",
+  "duration_seconds": 12,
+  "fps": 30,
+  "style": {"id": "minimal-product", "confirmed": true},
+  "voice": {"mode": "none", "confirmed": true},
+  "approval": {"plan_approved": true},
+  "creative_checks": {
+    "no_static_card_sequence": true,
+    "action_per_narrative_unit": true,
+    "motivated_transitions": true,
+    "captions_synced_to_final_audio": true,
+    "license_reviewed": true,
+    "layered_assets_ready": true,
+    "three_state_shots": true,
+    "final_audio_locked": true
+  }
+}
+
