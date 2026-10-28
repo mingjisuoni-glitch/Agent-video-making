@@ -10,6 +10,7 @@ from pathlib import Path
 class VoiceSpec:
     provider: str
     speaker: str
+    display_name: str = ""
     language: str = "Chinese"
     resource_id: str | None = None
     speech_rate: int = 0

@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from voice import Qwen3LocalProvider, VoiceSpec, VolcanoProvider
+from voice.cli import check_voice
 
 
 class FakeResponse:
@@ -22,6 +23,11 @@ class FakeResponse:
 
 
 class VoiceProviderTests(unittest.TestCase):
+    def test_cloud_preflight_requires_credentials_without_network_call(self):
+        with patch.dict(os.environ, {}, clear=True):
+            problems = check_voice(VoiceSpec("volcano", "voice-id", resource_id="seed-tts-2.0"))
+        self.assertTrue(any("VOLC_API_KEY" in item for item in problems))
+
     def test_volcano_uses_new_key_and_writes_only_completed_audio(self):
         captured = {}
 

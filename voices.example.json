@@ -6,27 +6,31 @@
       "resource_id": "seed-tts-2.0",
       "speech_rate": 0
     },
-    "口音感": {
+    "qwen-accent": {
       "provider": "qwen3-local",
       "speaker": "Dylan",
+      "display_name": "口音感",
       "language": "Chinese",
       "seed": 43101
     },
-    "冷幽默": {
+    "qwen-dry": {
       "provider": "qwen3-local",
       "speaker": "Uncle_Fu",
+      "display_name": "冷幽默",
       "language": "Chinese",
       "seed": 43102
     },
-    "悬疑感": {
+    "qwen-suspense": {
       "provider": "qwen3-local",
       "speaker": "Ryan",
+      "display_name": "悬疑感",
       "language": "Chinese",
       "seed": 43103
     },
-    "明亮调侃": {
+    "qwen-bright": {
       "provider": "qwen3-local",
       "speaker": "Aiden",
+      "display_name": "明亮调侃",
       "language": "Chinese",
       "seed": 43104
     }

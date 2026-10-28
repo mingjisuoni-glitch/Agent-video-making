@@ -11,6 +11,8 @@
 - [docs/voice-workflow.md](docs/voice-workflow.md)：配音制作顺序与接口边界。
 - `voice/`：火山引擎与本地 Qwen3-TTS 的统一调用接口。
 
+首次下载后，请先按 [下载后准备与演练](docs/getting-started.md) 完成本地预检。这个仓库是方法库，没有视频组合或渲染工程；制作具体视频时需要另建工程并提供自己的内容与素材。
+
 下载者需按自己的内容重新确认每条视频的参数、素材许可、视觉风格和配音方式。默认风格是剧情解说风、极简产品风，也可自行添加。配音方式为无配音、火山语音 API 或本地 Qwen3-TTS；后两者需选择具体音色。Skill、HyperFrames、语音模型以及云服务账号由下载者自行安装或配置。
 
 现有项目登记过 Kokoro 和 Qwen3-TTS 音色；这个接口先实现你指定的火山引擎与本地 Qwen3-TTS 两个后端。Kokoro 音色配方不属于这两个后端，不能通过改一个音色 ID 直接使用；后续可按同一契约增加 Kokoro 适配器。仓库的对外许可证尚未确定。
@@ -35,10 +37,12 @@ python -m voice.cli --voices voices.example.json --voice volcano-example --text-
 
 # 本地 Qwen3-TTS：先安装 qwen-tts 和 soundfile，并从 Qwen 官方仓库下载模型。
 $env:QWEN3_TTS_MODEL_DIR = 'C:\path\to\Qwen3-TTS-12Hz-0.6B-CustomVoice'
-python -m voice.cli --voices voices.example.json --voice 口音感 --text-file approved-segment.txt --output outputs/segment.wav
+python -m voice.cli --voices voices.example.json --voice qwen-accent --text-file approved-segment.txt --output outputs/segment.wav
 ```
 
-在项目目录 `video-method-kit` 内执行命令。不要把真实密钥写进 JSON、命令脚本、聊天记录或 Git 提交。旧控制台也可设置 `VOLC_APP_ID` 和 `VOLC_ACCESS_KEY`。`resource_id` 显式配置，因为它决定服务版本和计费方式。
+在下载后的仓库根目录执行命令。不要把真实密钥写进 JSON、命令脚本、聊天记录或 Git 提交。旧控制台也可设置 `VOLC_APP_ID` 和 `VOLC_ACCESS_KEY`。`resource_id` 显式配置，因为它决定服务版本和计费方式。
+
+真正合成前，可先运行不联网的本地配置检查：`python -m voice.cli --voices voices.example.json --voice volcano-example --check`，或将音色改为 `qwen-accent` 检查本地 Qwen 环境。检查通过不代表云端账号已开通资源，也不代表模型推理一定成功。
 
 本地 Qwen3-TTS 的模型需要用户自行下载；程序不会在运行时联网下载。0.6B CustomVoice 不支持 `instruct` 风格指令，若要使用该能力，应选支持它的 1.7B CustomVoice 模型。两种后端的音色 ID 不能直接互换，切换后端须重新试听和校对。
 
