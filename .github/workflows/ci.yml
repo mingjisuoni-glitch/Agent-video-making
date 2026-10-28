@@ -29,6 +29,9 @@ jobs:
       - run: python -m pip install -e .
       - run: ruff check voice tools tests
       - run: python -m unittest discover -s tests -q
+      - run: python -m tools.fetch_skills --validate-only --json
+      - run: python -m pip wheel --no-deps . -w dist
+      - run: python -c "import glob,zipfile; names=zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist(); required=['LICENSE','LICENSE.md','Apache-2.0.txt','PolyForm-Noncommercial-1.0.0.md','CC-BY-NC-4.0.txt','THIRD_PARTY_NOTICES.md']; missing=[item for item in required if not any(name.endswith(item) for name in names)]; assert not missing, missing"
       - run: python -m tools.doctor --json > doctor.json
       - run: python -c "import json; payload=json.load(open('doctor.json', encoding='utf-8')); assert payload['ok'], payload"
       - run: python -m json.tool video.schema.json > /dev/null

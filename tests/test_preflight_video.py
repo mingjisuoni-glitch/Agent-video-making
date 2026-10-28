@@ -42,6 +42,19 @@ class PreflightTests(unittest.TestCase):
         plan["voice"] = {"mode": "qwen3-local", "confirmed": True}
         self.assertTrue(any("voice_id" in item for item in validate_plan(plan)))
 
+    def test_invalid_types_and_ranges_are_rejected(self):
+        plan = valid_plan()
+        plan.update({"resolution": "nope", "duration_seconds": "soon", "fps": -30})
+        problems = validate_plan(plan)
+        self.assertTrue(any("resolution" in item for item in problems))
+        self.assertTrue(any("duration_seconds" in item for item in problems))
+        self.assertTrue(any("fps" in item for item in problems))
+
+    def test_ratio_must_match_resolution(self):
+        plan = valid_plan()
+        plan["resolution"] = "1920x1080"
+        self.assertTrue(any("does not match" in item for item in validate_plan(plan)))
+
 
 if __name__ == "__main__":
     unittest.main()

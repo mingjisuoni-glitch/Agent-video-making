@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import os
@@ -67,13 +68,40 @@ def load_profiles(path: Path) -> dict[str, VoiceSpec]:
 def plan_batch(rows: list[dict], resume: bool) -> list[dict]:
     planned: list[dict] = []
     for index, row in enumerate(rows, start=1):
+        if not isinstance(row, dict):
+            raise TypeError(f"batch row {index} must be a JSON object")
         if not row.get("id") or not str(row.get("text", "")).strip() or not row.get("output"):
             raise ValueError(f"batch row {index} requires id, text, and output")
-        output = Path(row["output"])
-        if resume and output.is_file() and output.stat().st_size > 0:
-            continue
         planned.append(row)
     return planned
+
+
+def segment_fingerprint(row: dict, voice_id: str, spec: VoiceSpec) -> str:
+    payload = {
+        "text": str(row["text"]).strip(),
+        "voice_id": voice_id,
+        "voice": asdict(spec),
+    }
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _resume_metadata(output: Path) -> Path:
+    return Path(f"{output}.avm.json")
+
+
+def _can_resume(output: Path, fingerprint: str, duration_reader) -> tuple[bool, float | None]:
+    metadata = _resume_metadata(output)
+    if not output.is_file() or output.stat().st_size <= 0 or not metadata.is_file():
+        return False, None
+    try:
+        payload = json.loads(metadata.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False, None
+    if payload.get("fingerprint") != fingerprint:
+        return False, None
+    duration = duration_reader(output)
+    return duration is not None and duration > 0, duration
 
 
 def _read_jsonl(path: Path) -> list[dict]:
@@ -91,8 +119,11 @@ def _read_jsonl(path: Path) -> list[dict]:
 
 def _duration_seconds(path: Path) -> float | None:
     if path.suffix.lower() == ".wav":
-        with wave.open(str(path), "rb") as audio:
-            return audio.getnframes() / float(audio.getframerate())
+        try:
+            with wave.open(str(path), "rb") as audio:
+                return audio.getnframes() / float(audio.getframerate())
+        except (OSError, ValueError, ZeroDivisionError, wave.Error):
+            return None
     try:
         completed = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nokey=1:noprint_wrappers=1", str(path)],
@@ -125,6 +156,7 @@ def execute_batch(
     dry_run: bool,
     provider_factory=_provider,
     duration_reader=_duration_seconds,
+    resume: bool = False,
 ) -> list[dict]:
     """Execute planned rows while reusing one loaded provider per voice profile."""
     providers: dict[str, object] = {}
@@ -134,18 +166,30 @@ def execute_batch(
         if not voice_id or voice_id not in profiles:
             raise ValueError(f"Unknown or missing voice for batch row {row['id']}")
         item = {"id": row["id"], "voice": voice_id, "output": row["output"], "status": "planned"}
+        spec = profiles[voice_id]
+        output = Path(row["output"])
+        fingerprint = segment_fingerprint(row, voice_id, spec)
+        resumable, prior_duration = _can_resume(output, fingerprint, duration_reader) if resume else (False, None)
+        if resumable:
+            item.update({"status": "skipped", "duration_seconds": prior_duration, "fingerprint": fingerprint})
+            report.append(item)
+            continue
         if not dry_run:
-            spec = profiles[voice_id]
             provider = providers.get(voice_id)
             if provider is None:
                 provider = provider_factory(spec)
                 providers[voice_id] = provider
-            output = Path(row["output"])
             result = provider.synthesize(str(row["text"]).strip(), spec, output)
+            duration = duration_reader(output)
+            metadata = {"fingerprint": fingerprint, "duration_seconds": duration}
+            _resume_metadata(output).write_text(
+                json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
             item.update({
                 "status": "completed",
                 "result": {**asdict(result), "path": str(result.path)},
-                "duration_seconds": duration_reader(output),
+                "duration_seconds": duration,
+                "fingerprint": fingerprint,
             })
         report.append(item)
     return report
@@ -155,11 +199,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Synthesize approved narration segments")
     parser.add_argument("--voices", type=Path, default=Path("voices.example.json"))
     parser.add_argument("--voice", help="Default profile key in the voices JSON file")
-    parser.add_argument("--list-voices", action="store_true")
-    parser.add_argument("--check", action="store_true", help="Check local setup without synthesis")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--list-voices", action="store_true")
+    mode.add_argument("--check", action="store_true", help="Check local setup without synthesis")
+    mode.add_argument("--batch", type=Path, help="JSONL rows with id, text, output, and optional voice")
     parser.add_argument("--text-file", type=Path)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--batch", type=Path, help="JSONL rows with id, text, output, and optional voice")
     parser.add_argument("--resume", action="store_true", help="Skip nonempty outputs that already exist")
     parser.add_argument("--dry-run", action="store_true", help="Validate and print work without synthesis")
     parser.add_argument("--duration-report", nargs="?", const="duration-report.json", type=Path)
@@ -169,6 +214,8 @@ def main(argv: list[str] | None = None) -> int:
         profiles = load_profiles(args.voices)
     except (OSError, ValueError, json.JSONDecodeError) as error:
         parser.error(str(error))
+    if args.resume and not args.batch:
+        parser.error("--resume requires --batch")
     if args.list_voices:
         listing = [
             {"id": name, "provider": spec.provider, "speaker": spec.speaker, "display_name": spec.display_name}
@@ -180,10 +227,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.batch:
         try:
             rows = plan_batch(_read_jsonl(args.batch), args.resume)
-        except (OSError, ValueError) as error:
+        except (OSError, TypeError, ValueError) as error:
             parser.error(str(error))
         try:
-            report = execute_batch(rows, profiles, args.voice, args.dry_run)
+            report = execute_batch(rows, profiles, args.voice, args.dry_run, resume=args.resume)
         except ValueError as error:
             parser.error(str(error))
         payload = {"dry_run": args.dry_run, "segments": report}
@@ -209,6 +256,7 @@ def main(argv: list[str] | None = None) -> int:
     result = _synthesize(text, spec, args.output)
     if args.duration_report:
         payload = {"result": result, "duration_seconds": _duration_seconds(args.output)}
+        args.duration_report.parent.mkdir(parents=True, exist_ok=True)
         args.duration_report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False))
     return 0

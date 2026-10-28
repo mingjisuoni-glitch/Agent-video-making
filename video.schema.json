@@ -5,7 +5,7 @@
   "type": "object",
   "required": ["ratio", "resolution", "duration_seconds", "fps", "style", "voice", "approval", "creative_checks"],
   "properties": {
-    "ratio": {"type": "string", "minLength": 3},
+    "ratio": {"type": "string", "pattern": "^[1-9][0-9]*:[1-9][0-9]*$"},
     "resolution": {"type": "string", "pattern": "^[0-9]+x[0-9]+$"},
     "duration_seconds": {"type": "number", "exclusiveMinimum": 0},
     "fps": {"type": "number", "exclusiveMinimum": 0},

@@ -17,11 +17,54 @@ from pathlib import Path
 from .contracts import SynthesisResult, VoiceSpec
 
 VOLCANO_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
+MIN_MODEL_BYTES = 100 * 1024 * 1024
+
+
+def model_integrity_problems(model_dir: Path) -> list[str]:
+    """Validate the local CustomVoice config and all declared weight shards."""
+    problems: list[str] = []
+    config_path = model_dir / "config.json"
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ["config.json is missing, unreadable, or invalid"]
+    if config.get("tts_model_type") != "custom_voice":
+        problems.append("config.json must declare tts_model_type=custom_voice")
+
+    index_path = model_dir / "model.safetensors.index.json"
+    weights: list[Path]
+    if index_path.is_file():
+        try:
+            index = json.loads(index_path.read_text(encoding="utf-8"))
+            weight_map = index.get("weight_map")
+            if not isinstance(weight_map, dict) or not weight_map:
+                raise ValueError("weight_map is empty")
+            names = sorted({str(name) for name in weight_map.values()})
+            weights = [model_dir / name for name in names]
+        except (OSError, ValueError, TypeError):
+            return problems + ["model.safetensors.index.json is invalid"]
+    else:
+        weights = sorted(model_dir.glob("*.safetensors"))
+    if not weights:
+        problems.append("safetensors weights are missing")
+        return problems
+    missing = [path.name for path in weights if not path.is_file()]
+    if missing:
+        problems.append(f"indexed weight shards are missing: {', '.join(missing)}")
+        return problems
+    try:
+        total_bytes = sum(path.stat().st_size for path in weights)
+    except OSError:
+        problems.append("model weights are unreadable")
+        return problems
+    if any(path.stat().st_size == 0 for path in weights) or total_bytes < MIN_MODEL_BYTES:
+        problems.append("model weights look incomplete (<100 MB or empty shard)")
+    return problems
 
 
 def has_model_weights(model_dir: Path) -> bool:
-    """Accept single-file and sharded safetensors checkpoints."""
-    return any(path.is_file() for path in model_dir.glob("*.safetensors"))
+    """Return true only for a structurally complete CustomVoice checkpoint."""
+    return not model_integrity_problems(model_dir)
 
 
 class VolcanoProvider:
@@ -117,14 +160,11 @@ class Qwen3LocalProvider:
             raise ValueError("Qwen3 output must use the .wav extension")
         if voice.speech_rate != 0:
             raise ValueError("Qwen3 CustomVoice has no numeric speech_rate control")
-        if not has_model_weights(self.model_dir):
-            raise FileNotFoundError("Set QWEN3_TTS_MODEL_DIR to a downloaded CustomVoice model")
+        integrity_problems = model_integrity_problems(self.model_dir)
+        if integrity_problems:
+            raise FileNotFoundError("Invalid Qwen3-TTS model: " + "; ".join(integrity_problems))
         config_path = self.model_dir / "config.json"
-        if not config_path.is_file():
-            raise FileNotFoundError("Qwen3-TTS config.json is missing")
         model_config = json.loads(config_path.read_text(encoding="utf-8"))
-        if model_config.get("tts_model_type") != "custom_voice":
-            raise ValueError("Qwen3 provider requires a CustomVoice model")
         if voice.instruct and model_config.get("tts_model_size") == "0b6":
             raise ValueError("Qwen3-TTS 0.6B CustomVoice ignores instruct; use 1.7B or remove it")
 

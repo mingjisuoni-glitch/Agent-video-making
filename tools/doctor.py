@@ -11,6 +11,8 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from voice.providers import MIN_MODEL_BYTES, model_integrity_problems
+
 
 @dataclass(frozen=True)
 class Check:
@@ -43,19 +45,12 @@ def _command(command: list[str], cwd: Path) -> tuple[int, str]:
 def inspect_qwen_model(model_dir: Path | None) -> Check:
     if model_dir is None:
         return Check("Qwen3-TTS model", "warn", "QWEN3_TTS_MODEL_DIR is unset; local TTS is optional")
-    config = model_dir / "config.json"
-    weights = list(model_dir.glob("*.safetensors"))
-    if not config.is_file() or not weights:
-        return Check("Qwen3-TTS model", "fail", "config.json or safetensors weights are missing")
-    try:
-        payload = json.loads(config.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return Check("Qwen3-TTS model", "fail", "config.json is unreadable or invalid")
-    if payload.get("tts_model_type") not in (None, "custom_voice"):
-        return Check("Qwen3-TTS model", "fail", "configured model is not CustomVoice")
-    total_bytes = sum(path.stat().st_size for path in weights)
-    if total_bytes < 100 * 1024 * 1024:
-        return Check("Qwen3-TTS model", "fail", "model weights look incomplete (<100 MB)")
+    problems = model_integrity_problems(model_dir)
+    if problems:
+        return Check("Qwen3-TTS model", "fail", "; ".join(problems))
+    total_bytes = sum(path.stat().st_size for path in model_dir.glob("*.safetensors"))
+    if total_bytes < MIN_MODEL_BYTES:
+        return Check("Qwen3-TTS model", "fail", "model weights look incomplete")
     return Check("Qwen3-TTS model", "ok", f"{model_dir} ({total_bytes / 1024**3:.1f} GB weights)")
 
 

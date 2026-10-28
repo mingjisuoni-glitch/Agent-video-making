@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import re
+from math import gcd
 from pathlib import Path
 
 REQUIRED_CREATIVE_CHECKS = (
@@ -20,22 +23,38 @@ REQUIRED_CREATIVE_CHECKS = (
 
 def validate_plan(plan: dict) -> list[str]:
     problems: list[str] = []
-    for key in ("ratio", "resolution", "duration_seconds", "fps"):
-        if not plan.get(key):
-            problems.append(f"{key} is required")
-    style = plan.get("style") or {}
+    ratio = plan.get("ratio")
+    ratio_match = re.fullmatch(r"([1-9][0-9]*):([1-9][0-9]*)", ratio) if isinstance(ratio, str) else None
+    if not ratio_match:
+        problems.append("ratio must use positive W:H integers, for example 16:9")
+    resolution = plan.get("resolution")
+    resolution_match = re.fullmatch(r"([1-9][0-9]*)x([1-9][0-9]*)", resolution) if isinstance(resolution, str) else None
+    if not resolution_match:
+        problems.append("resolution must use positive WIDTHxHEIGHT integers")
+    elif ratio_match:
+        width, height = (int(value) for value in resolution_match.groups())
+        divisor = gcd(width, height)
+        actual_ratio = f"{width // divisor}:{height // divisor}"
+        if actual_ratio != ratio:
+            problems.append(f"ratio {ratio} does not match resolution {resolution}")
+    for key in ("duration_seconds", "fps"):
+        value = plan.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+            problems.append(f"{key} must be a positive finite number")
+    style = plan.get("style") if isinstance(plan.get("style"), dict) else {}
     if not style.get("id") or style.get("confirmed") is not True:
         problems.append("style.id and style.confirmed=true are required")
-    voice = plan.get("voice") or {}
+    voice = plan.get("voice") if isinstance(plan.get("voice"), dict) else {}
     if voice.get("mode") not in {"none", "volcano", "qwen3-local"}:
         problems.append("voice.mode must be none, volcano, or qwen3-local")
     if voice.get("confirmed") is not True:
         problems.append("voice.confirmed=true is required")
     if voice.get("mode") in {"volcano", "qwen3-local"} and not voice.get("voice_id"):
         problems.append("voice.voice_id is required for a TTS backend")
-    if (plan.get("approval") or {}).get("plan_approved") is not True:
+    approval = plan.get("approval") if isinstance(plan.get("approval"), dict) else {}
+    if approval.get("plan_approved") is not True:
         problems.append("approval.plan_approved must be true")
-    checks = plan.get("creative_checks") or {}
+    checks = plan.get("creative_checks") if isinstance(plan.get("creative_checks"), dict) else {}
     for key in REQUIRED_CREATIVE_CHECKS:
         if checks.get(key) is not True:
             problems.append(f"creative_checks.{key} must be true")

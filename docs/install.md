@@ -23,21 +23,25 @@ ffmpeg -version
 python --version
 ```
 
-常见安装方式：
+常见安装方式（全新系统还要先装 Git，或者使用下面的 ZIP 方案）：
 
-- Windows：`winget install OpenJS.NodeJS.LTS`、`winget install Gyan.FFmpeg`，Python 从 python.org 或 Microsoft Store 安装。
-- macOS：`brew install node@22 ffmpeg python@3.12`。
-- Ubuntu/Debian：建议用 nvm 安装 Node 22；`sudo apt install ffmpeg python3 python3-venv`。
+- Windows：`winget install --id Git.Git -e`、`winget install OpenJS.NodeJS.LTS`、`winget install Gyan.FFmpeg`，Python 从 python.org 或 Microsoft Store 安装。
+- macOS：先安装 Homebrew，再运行 `brew install git node@22 ffmpeg python@3.12`；Apple Silicon 通常还要执行 `echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc`，Intel Mac 将 `/opt/homebrew` 换成 `/usr/local`。
+- Ubuntu/Debian：`sudo apt update && sudo apt install -y git curl ffmpeg python3 python3-venv`，再运行 `curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs`。
 
 如果包管理器提供的 Node 仍低于 22，先升级 Node，不要继续排查 HyperFrames。
 
 ## 2. 取得仓库并安装核心工具
+
+有 Git 时：
 
 ```bash
 git clone https://github.com/mingjisuoni-glitch/Agent-video-making.git
 cd Agent-video-making
 python -m venv .venv
 ```
+
+没有 Git 时，在仓库网页选择 **Code → Download ZIP**，解压后进入包含 `README.md` 和 `pyproject.toml` 的目录，再运行 `python -m venv .venv`。ZIP 可以使用项目，但没有版本更新和提交历史。
 
 激活虚拟环境：
 
@@ -62,6 +66,8 @@ avm-doctor
 python -m tools.fetch_skills --check
 python -m unittest discover -s tests -q
 ```
+
+这些命令是仓库作用域工具：默认从当前仓库读取 `voices.example.json`、`tests/` 和示例方案。离开仓库目录运行时，应显式传 `avm-doctor --root <仓库路径>`、`avm-voice --voices <仓库路径/voices.example.json>`；PyPI 式的独立应用安装不在当前版本承诺范围内。
 
 `avm-doctor` 的 `warn` 表示可选能力不可用，例如未配置 Qwen 模型或火山密钥；`fail` 才会令退出码非零。HyperFrames 自己的 `npx hyperframes doctor --json` 不同：它总是退出 0，自动化必须检查 JSON 的顶层 `ok`。
 

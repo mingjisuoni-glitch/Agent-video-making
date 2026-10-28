@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import tempfile
 import unittest
@@ -57,7 +58,8 @@ class VoiceProviderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             model_dir = Path(folder) / "Qwen3-TTS-12Hz-0.6B-CustomVoice"
             model_dir.mkdir()
-            (model_dir / "model.safetensors").touch()
+            with (model_dir / "model.safetensors").open("wb") as weights:
+                weights.truncate(101 * 1024 * 1024)
             (model_dir / "config.json").write_text(
                 '{"tts_model_type":"custom_voice","tts_model_size":"0b6"}', encoding="utf-8"
             )
@@ -75,8 +77,16 @@ class VoiceProviderTests(unittest.TestCase):
     def test_qwen_detects_sharded_safetensors_weights(self):
         with tempfile.TemporaryDirectory() as folder:
             model_dir = Path(folder)
-            (model_dir / "model-00001-of-00002.safetensors").touch()
-            (model_dir / "model-00002-of-00002.safetensors").touch()
+            (model_dir / "config.json").write_text(
+                '{"tts_model_type":"custom_voice"}', encoding="utf-8"
+            )
+            names = ["model-00001-of-00002.safetensors", "model-00002-of-00002.safetensors"]
+            (model_dir / "model.safetensors.index.json").write_text(json.dumps({
+                "weight_map": {"a": names[0], "b": names[1]}
+            }), encoding="utf-8")
+            for name in names:
+                with (model_dir / name).open("wb") as weights:
+                    weights.truncate(51 * 1024 * 1024)
             self.assertTrue(has_model_weights(model_dir))
 
 

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
@@ -25,6 +27,8 @@ def validate_manifest(manifest: dict) -> list[str]:
                 problems.append(f"{name}: git source.repo is required")
             if not re.fullmatch(r"[0-9a-fA-F]{40}", str(source.get("commit", ""))):
                 problems.append(f"{name}: git source must pin a 40-character commit")
+            if not re.fullmatch(r"[0-9a-fA-F]{64}", str(source.get("skill_sha256", ""))):
+                problems.append(f"{name}: git source must pin a 64-character skill_sha256")
         if not entry.get("license"):
             problems.append(f"{name}: license is required")
     return problems
@@ -32,14 +36,23 @@ def validate_manifest(manifest: dict) -> list[str]:
 
 def _candidate_roots() -> list[Path]:
     home = Path.home()
-    return [home / ".agents" / "skills", home / ".codex" / "skills"]
+    configured = [Path(item) for item in os.environ.get("AVM_SKILL_ROOTS", "").split(os.pathsep) if item]
+    return configured + [home / ".agents" / "skills", home / ".codex" / "skills"]
 
 
-def inspect_manifest(manifest: dict) -> list[dict]:
+def inspect_manifest(manifest: dict, roots: list[Path] | None = None) -> list[dict]:
+    roots = roots or _candidate_roots()
     results: list[dict] = []
     for name, entry in manifest["skills"].items():
-        installed = next((root / name for root in _candidate_roots() if (root / name / "SKILL.md").is_file()), None)
+        installed = next((root / name for root in roots if (root / name / "SKILL.md").is_file()), None)
         state = "ok" if installed else ("fail" if entry.get("required") else "warn")
+        detail = None
+        expected_hash = entry["source"].get("skill_sha256")
+        if installed and expected_hash:
+            actual_hash = hashlib.sha256((installed / "SKILL.md").read_bytes()).hexdigest()
+            if actual_hash.lower() != expected_hash.lower():
+                state = "fail" if entry.get("required") else "warn"
+                detail = f"SKILL.md hash mismatch: expected {expected_hash}, got {actual_hash}"
         results.append({
             "name": name,
             "state": state,
@@ -47,6 +60,7 @@ def inspect_manifest(manifest: dict) -> list[dict]:
             "installed_path": str(installed) if installed else None,
             "license": entry["license"],
             "source": entry["source"],
+            "detail": detail,
         })
     return results
 
@@ -55,11 +69,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Check declared external Skills")
     parser.add_argument("--manifest", type=Path, default=Path("skills/manifest.json"))
     parser.add_argument("--check", action="store_true", help="Check installation without changing it")
+    parser.add_argument("--validate-only", action="store_true", help="Validate manifest pins without inspecting installed Skills")
+    parser.add_argument("--root", action="append", type=Path, help="Additional Skill root (repeatable)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     problems = validate_manifest(manifest)
-    results = [] if problems else inspect_manifest(manifest)
+    roots = (args.root or []) + _candidate_roots()
+    results = [] if problems or args.validate_only else inspect_manifest(manifest, roots)
     code = 1 if problems or any(item["state"] == "fail" for item in results) else 0
     payload = {"ok": code == 0, "manifest_problems": problems, "skills": results}
     if args.json:

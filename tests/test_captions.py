@@ -1,6 +1,10 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
-from voice.captions import format_srt, group_words
+from voice.captions import format_srt, group_words, transcribe
 
 
 class CaptionTests(unittest.TestCase):
@@ -27,6 +31,30 @@ class CaptionTests(unittest.TestCase):
         srt = format_srt([{"text": "测试", "start": 1.0, "end": 2.25}])
         self.assertIn("00:00:01,000 --> 00:00:02,250", srt)
         self.assertTrue(srt.endswith("\n"))
+
+    def test_transcribe_loads_words_from_hyperframes_sidecar(self):
+        with tempfile.TemporaryDirectory() as folder:
+            transcript = Path(folder) / "transcript.json"
+            words = [{"text": "测试", "start": 0.0, "end": 0.4}]
+            transcript.write_text(json.dumps(words), encoding="utf-8")
+            completed = type("Completed", (), {
+                "stdout": json.dumps({"ok": True, "wordCount": 1, "transcriptPath": str(transcript)})
+            })()
+            with patch("voice.captions.shutil.which", return_value="npx.cmd"), patch(
+                "voice.captions.subprocess.run", return_value=completed
+            ) as run:
+                self.assertEqual(transcribe(Path("audio.wav"), "small", "zh"), words)
+            self.assertEqual(
+                run.call_args.args[0][:4],
+                ["npx.cmd", "--yes", "--offline", "hyperframes@0.8.210"],
+            )
+
+    def test_transcribe_rejects_missing_transcript_path(self):
+        completed = type("Completed", (), {"stdout": '{"ok":true,"wordCount":1}'})()
+        with patch("voice.captions.shutil.which", return_value="npx"), patch(
+            "voice.captions.subprocess.run", return_value=completed
+        ), self.assertRaisesRegex(ValueError, "transcriptPath"):
+            transcribe(Path("audio.wav"), "small", "zh")
 
 
 if __name__ == "__main__":

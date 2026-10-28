@@ -22,4 +22,5 @@ avm-preflight = "tools.preflight_video:main"
 
 [tool.setuptools]
 packages = ["voice", "tools"]
+license-files = ["LICENSE", "LICENSE.md", "LICENSES/*", "THIRD_PARTY_NOTICES.md"]
 

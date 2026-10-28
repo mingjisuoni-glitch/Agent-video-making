@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
 PAUSE_GAP = 0.28
 MAX_CHARS = 18
+HYPERFRAMES_VERSION = "0.8.210"
 _CJK = re.compile(r"[\u3400-\u9fff]")
 
 
@@ -82,12 +84,26 @@ def _load_words(path: Path) -> list[dict]:
 
 
 def transcribe(audio: Path, model: str, language: str | None) -> list[dict]:
-    command = ["npx", "hyperframes", "transcribe", str(audio), "--model", model, "--json"]
+    npx = shutil.which("npx")
+    if not npx:
+        raise FileNotFoundError("npx is required to run HyperFrames transcription")
+    command = [
+        npx, "--yes", "--offline", f"hyperframes@{HYPERFRAMES_VERSION}",
+        "transcribe", str(audio), "--model", model, "--json",
+    ]
     if language:
         command.extend(["--language", language])
     completed = subprocess.run(command, check=True, capture_output=True, text=True)
     payload = json.loads(completed.stdout)
-    return payload.get("words", payload) if isinstance(payload, dict) else payload
+    if not isinstance(payload, dict) or payload.get("ok") is not True:
+        raise ValueError("HyperFrames returned an invalid or unsuccessful transcription result")
+    transcript_path = payload.get("transcriptPath")
+    if not isinstance(transcript_path, str) or not transcript_path:
+        raise ValueError("HyperFrames result is missing transcriptPath")
+    path = Path(transcript_path)
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    return _load_words(path)
 
 
 def main(argv: list[str] | None = None) -> int:

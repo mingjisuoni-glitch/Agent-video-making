@@ -7,6 +7,7 @@
         "type": "git",
         "repo": "https://github.com/heygen-com/hyperframes.git",
         "commit": "8b1f88b3c06175f43fbdbe1af6e53933847cb195",
+        "skill_sha256": "96f3793bd677dde345c5aca4aa6484334100a154e8a5d9e2ad07d69c9b9e2b0e",
         "cli_version": "0.8.210"
       },
       "license": "Apache-2.0",

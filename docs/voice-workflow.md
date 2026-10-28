@@ -34,14 +34,14 @@ avm-voice --voices voices.example.json --list-voices
 # 单段试跑，不调用 API 或模型
 avm-voice --voices voices.example.json --voice qwen-accent --text-file approved.txt --output outputs/test.wav --dry-run
 
-# JSONL 批量任务；已有非空输出可断点跳过
+# JSONL 批量任务；只有音频和任务指纹都匹配才会断点跳过
 avm-voice --voices voices.local.json --batch segments.jsonl --resume --duration-report outputs/durations.json
 
 # 最终音频转词级时间戳，再按停顿生成 JSON 与 SRT
 avm-captions --audio outputs/final.wav --model small --language zh --json-output outputs/captions.json --srt-output outputs/captions.srt
 ```
 
-批量 JSONL 的每行至少包含 `id`、`text`、`output`，可以单独指定 `voice`；未单独指定时使用命令行的 `--voice`。`--resume` 只跳过已经存在且非空的输出，不把零字节或失败文件当成完成。MP3 时长报告需要 FFprobe。
+批量 JSONL 的每行至少包含 `id`、`text`、`output`，可以单独指定 `voice`；未单独指定时使用命令行的 `--voice`。每次成功合成会在音频旁写入 `.avm.json` 指纹文件，包含文本和完整音色配置的摘要。`--resume` 只跳过“音频可读、指纹仍匹配”的段落；修改文本、speaker、后端参数或删除指纹后会重新合成。时长报告同时列出新完成和已验证后跳过的段落。MP3 时长报告需要 FFprobe。
 
 中文转写必须显式选择不带 `.en` 的多语言模型并设置 `--language zh`；HyperFrames 默认的英语模型会把非英语音频转成英文。任何重新配音、拼接、变速或剪辑都会使旧字幕时间失效，必须重新运行。
 

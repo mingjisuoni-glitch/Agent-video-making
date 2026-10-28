@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,6 +24,30 @@ class DoctorTests(unittest.TestCase):
             check = inspect_qwen_model(root)
             self.assertEqual(check.state, "fail")
             self.assertIn("incomplete", check.detail.lower())
+
+    def test_qwen_model_requires_exact_custom_voice_type(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "config.json").write_text("{}", encoding="utf-8")
+            with (root / "model.safetensors").open("wb") as weights:
+                weights.truncate(101 * 1024 * 1024)
+            self.assertEqual(inspect_qwen_model(root).state, "fail")
+
+    def test_qwen_model_rejects_missing_indexed_shard(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "config.json").write_text(
+                '{"tts_model_type":"custom_voice"}', encoding="utf-8"
+            )
+            (root / "model.safetensors.index.json").write_text(json.dumps({
+                "weight_map": {
+                    "a": "model-00001-of-00002.safetensors",
+                    "b": "model-00002-of-00002.safetensors",
+                }
+            }), encoding="utf-8")
+            with (root / "model-00001-of-00002.safetensors").open("wb") as weights:
+                weights.truncate(101 * 1024 * 1024)
+            self.assertEqual(inspect_qwen_model(root).state, "fail")
 
 
 if __name__ == "__main__":
