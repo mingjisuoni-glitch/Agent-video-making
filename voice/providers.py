@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 import os
 import urllib.request
 import uuid
@@ -18,6 +19,12 @@ from .contracts import SynthesisResult, VoiceSpec
 
 VOLCANO_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
 MIN_MODEL_BYTES = 100 * 1024 * 1024
+SAFETENSORS_DTYPE_BYTES = {
+    "BOOL": 1, "I8": 1, "U8": 1, "F8_E4M3": 1, "F8_E5M2": 1,
+    "I16": 2, "U16": 2, "F16": 2, "BF16": 2,
+    "I32": 4, "U32": 4, "F32": 4,
+    "I64": 8, "U64": 8, "F64": 8,
+}
 
 
 def _safetensors_problem(path: Path) -> str | None:
@@ -41,18 +48,27 @@ def _safetensors_problem(path: Path) -> str | None:
         return "header contains no tensors"
     offsets: list[tuple[int, int]] = []
     for tensor in tensors:
-        if not isinstance(tensor, dict) or not isinstance(tensor.get("dtype"), str):
+        if not isinstance(tensor, dict) or tensor.get("dtype") not in SAFETENSORS_DTYPE_BYTES:
             return "tensor metadata is invalid"
+        dtype = tensor["dtype"]
         shape = tensor.get("shape")
         bounds = tensor.get("data_offsets")
-        if not isinstance(shape, list) or not all(isinstance(item, int) and item >= 0 for item in shape):
+        if not isinstance(shape, list) or not all(
+            isinstance(item, int) and not isinstance(item, bool) and item >= 0 for item in shape
+        ):
             return "tensor shape is invalid"
         if (
             not isinstance(bounds, list) or len(bounds) != 2
-            or not all(isinstance(item, int) and item >= 0 for item in bounds)
+            or not all(
+                isinstance(item, int) and not isinstance(item, bool) and item >= 0
+                for item in bounds
+            )
             or bounds[0] > bounds[1]
         ):
             return "tensor data_offsets are invalid"
+        expected_bytes = math.prod(shape) * SAFETENSORS_DTYPE_BYTES[dtype]
+        if bounds[1] - bounds[0] != expected_bytes:
+            return "tensor shape and dtype do not match data_offsets"
         offsets.append((bounds[0], bounds[1]))
     data_size = file_size - 8 - header_size
     cursor = 0

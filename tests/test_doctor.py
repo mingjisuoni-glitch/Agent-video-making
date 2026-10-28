@@ -55,6 +55,48 @@ class DoctorTests(unittest.TestCase):
             self.assertEqual(check.state, "fail")
             self.assertIn("header", check.detail)
 
+    def test_qwen_model_rejects_unknown_safetensors_dtype(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "config.json").write_text(
+                '{"tts_model_type":"custom_voice"}', encoding="utf-8"
+            )
+            data_bytes = 101 * 1024 * 1024
+            header = json.dumps({
+                "weight": {
+                    "dtype": "NOT_A_DTYPE", "shape": [data_bytes],
+                    "data_offsets": [0, data_bytes],
+                }
+            }, separators=(",", ":")).encode("utf-8")
+            header += b" " * (-len(header) % 8)
+            path = root / "model.safetensors"
+            with path.open("wb") as weights:
+                weights.write(len(header).to_bytes(8, "little"))
+                weights.write(header)
+                weights.truncate(weights.tell() + data_bytes)
+            self.assertEqual(inspect_qwen_model(root).state, "fail")
+
+    def test_qwen_model_rejects_shape_offset_byte_mismatch(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "config.json").write_text(
+                '{"tts_model_type":"custom_voice"}', encoding="utf-8"
+            )
+            data_bytes = 101 * 1024 * 1024
+            header = json.dumps({
+                "weight": {
+                    "dtype": "F32", "shape": [data_bytes],
+                    "data_offsets": [0, data_bytes],
+                }
+            }, separators=(",", ":")).encode("utf-8")
+            header += b" " * (-len(header) % 8)
+            path = root / "model.safetensors"
+            with path.open("wb") as weights:
+                weights.write(len(header).to_bytes(8, "little"))
+                weights.write(header)
+                weights.truncate(weights.tell() + data_bytes)
+            self.assertEqual(inspect_qwen_model(root).state, "fail")
+
     def test_qwen_model_rejects_missing_indexed_shard(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
