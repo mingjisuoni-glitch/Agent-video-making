@@ -13,6 +13,7 @@ out/
 .thumbnails/
 node_modules/
 duration-report.json
+*.avm.json
 dist/
 build/
 *.egg-info/

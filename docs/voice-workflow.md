@@ -41,7 +41,7 @@ avm-voice --voices voices.local.json --batch segments.jsonl --resume --duration-
 avm-captions --audio outputs/final.wav --model small --language zh --json-output outputs/captions.json --srt-output outputs/captions.srt
 ```
 
-批量 JSONL 的每行至少包含 `id`、`text`、`output`，可以单独指定 `voice`；未单独指定时使用命令行的 `--voice`。每次成功合成会在音频旁写入 `.avm.json` 指纹文件，包含文本和完整音色配置的摘要。`--resume` 只跳过“音频可读、指纹仍匹配”的段落；修改文本、speaker、后端参数或删除指纹后会重新合成。时长报告同时列出新完成和已验证后跳过的段落。MP3 时长报告需要 FFprobe。
+批量 JSONL 的每行至少包含 `id`、`text`、`output`，可以单独指定 `voice`；未单独指定时使用命令行的 `--voice`。每次成功合成会在音频旁写入 `.avm.json` 指纹文件，记录文本、完整音色配置、工具/模型来源信息和生成音频的 SHA-256。`--resume` 只跳过“音频可读、任务指纹与音频哈希都匹配”的段落；修改文本、speaker、后端参数、Qwen 模型文件、运行时版本、音频内容或删除指纹后都会重新合成。时长报告同时列出新完成和已验证后跳过的段落。MP3 时长报告需要 FFprobe。
 
 中文转写必须显式选择不带 `.en` 的多语言模型并设置 `--language zh`；HyperFrames 默认的英语模型会把非英语音频转成英文。任何重新配音、拼接、变速或剪辑都会使旧字幕时间失效，必须重新运行。
 

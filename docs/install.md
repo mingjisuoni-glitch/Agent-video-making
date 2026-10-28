@@ -116,7 +116,7 @@ python -m pip install -U modelscope
 modelscope download --model Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice --local_dir ./models/Qwen3-TTS-12Hz-0.6B-CustomVoice
 ```
 
-然后设置 `QWEN3_TTS_MODEL_DIR` 并运行 `avm-voice ... --check`。下载后应看到 `config.json` 和非空的 safetensors 权重；只有文件名而没有完整权重不算安装完成。
+然后设置 `QWEN3_TTS_MODEL_DIR` 并运行 `avm-voice ... --check`。下载后应看到声明 `custom_voice` 的 `config.json` 和完整 safetensors 权重；体检会解析权重头与分片索引，并核对所有声明分片和数据区。只有文件名、空文件或截断权重不算安装完成。
 
 ## 6. 字幕链路
 

@@ -20,6 +20,51 @@ VOLCANO_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
 MIN_MODEL_BYTES = 100 * 1024 * 1024
 
 
+def _safetensors_problem(path: Path) -> str | None:
+    """Validate safetensors header JSON and that declared offsets cover the data region."""
+    try:
+        file_size = path.stat().st_size
+        with path.open("rb") as handle:
+            header_size_raw = handle.read(8)
+            if len(header_size_raw) != 8:
+                return "missing 8-byte header length"
+            header_size = int.from_bytes(header_size_raw, "little", signed=False)
+            if header_size <= 1 or header_size > min(64 * 1024 * 1024, file_size - 8):
+                return "invalid header length"
+            header = json.loads(handle.read(header_size).decode("utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return "unreadable or invalid header"
+    if not isinstance(header, dict):
+        return "header must be an object"
+    tensors = [value for key, value in header.items() if key != "__metadata__"]
+    if not tensors:
+        return "header contains no tensors"
+    offsets: list[tuple[int, int]] = []
+    for tensor in tensors:
+        if not isinstance(tensor, dict) or not isinstance(tensor.get("dtype"), str):
+            return "tensor metadata is invalid"
+        shape = tensor.get("shape")
+        bounds = tensor.get("data_offsets")
+        if not isinstance(shape, list) or not all(isinstance(item, int) and item >= 0 for item in shape):
+            return "tensor shape is invalid"
+        if (
+            not isinstance(bounds, list) or len(bounds) != 2
+            or not all(isinstance(item, int) and item >= 0 for item in bounds)
+            or bounds[0] > bounds[1]
+        ):
+            return "tensor data_offsets are invalid"
+        offsets.append((bounds[0], bounds[1]))
+    data_size = file_size - 8 - header_size
+    cursor = 0
+    for start, end in sorted(offsets):
+        if start != cursor or end > data_size:
+            return "tensor offsets do not match the data region"
+        cursor = end
+    if cursor != data_size:
+        return "tensor offsets do not cover the data region"
+    return None
+
+
 def model_integrity_problems(model_dir: Path) -> list[str]:
     """Validate the local CustomVoice config and all declared weight shards."""
     problems: list[str] = []
@@ -51,6 +96,10 @@ def model_integrity_problems(model_dir: Path) -> list[str]:
     missing = [path.name for path in weights if not path.is_file()]
     if missing:
         problems.append(f"indexed weight shards are missing: {', '.join(missing)}")
+        return problems
+    invalid = [f"{path.name}: {reason}" for path in weights if (reason := _safetensors_problem(path))]
+    if invalid:
+        problems.append("invalid safetensors files: " + "; ".join(invalid))
         return problems
     try:
         total_bytes = sum(path.stat().st_size for path in weights)

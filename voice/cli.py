@@ -10,6 +10,7 @@ import os
 import subprocess
 import wave
 from dataclasses import asdict
+from importlib import metadata
 from pathlib import Path
 
 from .contracts import VoiceSpec
@@ -76,11 +77,62 @@ def plan_batch(rows: list[dict], resume: bool) -> list[dict]:
     return planned
 
 
+def file_sha256(path: Path, limit: int | None = None) -> str:
+    digest = hashlib.sha256()
+    remaining = limit
+    with path.open("rb") as handle:
+        while remaining is None or remaining > 0:
+            size = 1024 * 1024 if remaining is None else min(1024 * 1024, remaining)
+            chunk = handle.read(size)
+            if not chunk:
+                break
+            digest.update(chunk)
+            if remaining is not None:
+                remaining -= len(chunk)
+    return digest.hexdigest()
+
+
+def _package_version(name: str) -> str:
+    try:
+        return metadata.version(name)
+    except metadata.PackageNotFoundError:
+        return "not-installed"
+
+
+def _model_provenance(spec: VoiceSpec) -> dict:
+    provenance = {
+        "agent_video_making": _package_version("agent-video-making"),
+        "provider": spec.provider,
+    }
+    if spec.provider != "qwen3-local":
+        return provenance
+    provenance["qwen_tts"] = _package_version("qwen-tts")
+    configured = os.environ.get("QWEN3_TTS_MODEL_DIR")
+    if not configured:
+        provenance["model_dir"] = None
+        return provenance
+    model_dir = Path(configured).resolve()
+    provenance["model_dir"] = str(model_dir)
+    files = []
+    for path in sorted([model_dir / "config.json", model_dir / "model.safetensors.index.json"] + list(model_dir.glob("*.safetensors"))):
+        if path.is_file():
+            stat = path.stat()
+            files.append({
+                "name": path.name,
+                "size": stat.st_size,
+                "mtime_ns": stat.st_mtime_ns,
+                "head_sha256": file_sha256(path, limit=1024 * 1024),
+            })
+    provenance["model_files"] = files
+    return provenance
+
+
 def segment_fingerprint(row: dict, voice_id: str, spec: VoiceSpec) -> str:
     payload = {
         "text": str(row["text"]).strip(),
         "voice_id": voice_id,
         "voice": asdict(spec),
+        "runtime": _model_provenance(spec),
     }
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
@@ -99,6 +151,9 @@ def _can_resume(output: Path, fingerprint: str, duration_reader) -> tuple[bool, 
     except (OSError, ValueError):
         return False, None
     if payload.get("fingerprint") != fingerprint:
+        return False, None
+    expected_audio_hash = payload.get("audio_sha256")
+    if not isinstance(expected_audio_hash, str) or file_sha256(output) != expected_audio_hash:
         return False, None
     duration = duration_reader(output)
     return duration is not None and duration > 0, duration
@@ -181,7 +236,11 @@ def execute_batch(
                 providers[voice_id] = provider
             result = provider.synthesize(str(row["text"]).strip(), spec, output)
             duration = duration_reader(output)
-            metadata = {"fingerprint": fingerprint, "duration_seconds": duration}
+            metadata = {
+                "fingerprint": fingerprint,
+                "audio_sha256": file_sha256(output),
+                "duration_seconds": duration,
+            }
             _resume_metadata(output).write_text(
                 json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
             )
@@ -205,7 +264,10 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--batch", type=Path, help="JSONL rows with id, text, output, and optional voice")
     parser.add_argument("--text-file", type=Path)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--resume", action="store_true", help="Skip nonempty outputs that already exist")
+    parser.add_argument(
+        "--resume", action="store_true",
+        help="Skip only readable outputs whose text, voice, runtime/model, and audio hash still match",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Validate and print work without synthesis")
     parser.add_argument("--duration-report", nargs="?", const="duration-report.json", type=Path)
     args = parser.parse_args(argv)

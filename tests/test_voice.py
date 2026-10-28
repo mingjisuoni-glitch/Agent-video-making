@@ -11,6 +11,17 @@ from voice.cli import check_voice
 from voice.providers import has_model_weights
 
 
+def write_fake_safetensors(path: Path, data_bytes: int) -> None:
+    header = json.dumps({
+        "weight": {"dtype": "U8", "shape": [data_bytes], "data_offsets": [0, data_bytes]}
+    }, separators=(",", ":")).encode("utf-8")
+    header += b" " * (-len(header) % 8)
+    with path.open("wb") as weights:
+        weights.write(len(header).to_bytes(8, "little"))
+        weights.write(header)
+        weights.truncate(weights.tell() + data_bytes)
+
+
 class FakeResponse:
     def __enter__(self):
         return self
@@ -58,8 +69,7 @@ class VoiceProviderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             model_dir = Path(folder) / "Qwen3-TTS-12Hz-0.6B-CustomVoice"
             model_dir.mkdir()
-            with (model_dir / "model.safetensors").open("wb") as weights:
-                weights.truncate(101 * 1024 * 1024)
+            write_fake_safetensors(model_dir / "model.safetensors", 101 * 1024 * 1024)
             (model_dir / "config.json").write_text(
                 '{"tts_model_type":"custom_voice","tts_model_size":"0b6"}', encoding="utf-8"
             )
@@ -85,8 +95,7 @@ class VoiceProviderTests(unittest.TestCase):
                 "weight_map": {"a": names[0], "b": names[1]}
             }), encoding="utf-8")
             for name in names:
-                with (model_dir / name).open("wb") as weights:
-                    weights.truncate(51 * 1024 * 1024)
+                write_fake_safetensors(model_dir / name, 51 * 1024 * 1024)
             self.assertTrue(has_model_weights(model_dir))
 
 

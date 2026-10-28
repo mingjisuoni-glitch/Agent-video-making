@@ -55,6 +55,14 @@ class PreflightTests(unittest.TestCase):
         plan["resolution"] = "1920x1080"
         self.assertTrue(any("does not match" in item for item in validate_plan(plan)))
 
+    def test_nested_identifiers_must_be_nonempty_strings(self):
+        plan = valid_plan()
+        plan["style"]["id"] = 123
+        plan["voice"] = {"mode": "qwen3-local", "voice_id": 456, "confirmed": True}
+        problems = validate_plan(plan)
+        self.assertTrue(any("style.id" in item for item in problems))
+        self.assertTrue(any("voice.voice_id" in item for item in problems))
+
 
 if __name__ == "__main__":
     unittest.main()
