@@ -67,6 +67,8 @@ python -m tools.fetch_skills --check
 python -m unittest discover -s tests -q
 ```
 
+Skill 不是全部打包在仓库里的依赖。公开上游、安装命令、固定提交、许可证以及 `imagegen`/私有插件等例外，统一见 [Skill 来源、安装渠道与限制](skill-sources.md)。不要看到缺少可选 Skill 就从同名仓库盲装；先核对清单中的来源。
+
 这些命令是仓库作用域工具：默认从当前仓库读取 `voices.example.json`、`tests/` 和示例方案。离开仓库目录运行时，应显式传 `avm-doctor --root <仓库路径>`、`avm-voice --voices <仓库路径/voices.example.json>`；PyPI 式的独立应用安装不在当前版本承诺范围内。
 
 `avm-doctor` 的 `warn` 表示可选能力不可用，例如未配置 Qwen 模型或火山密钥；`fail` 才会令退出码非零。HyperFrames 自己的 `npx hyperframes doctor --json` 不同：它总是退出 0，自动化必须检查 JSON 的顶层 `ok`。
@@ -76,6 +78,7 @@ python -m unittest discover -s tests -q
 样例工程已钉住 HyperFrames 0.8.210。首次安装需要联网：
 
 ```bash
+npx hyperframes@0.8.210 skills update hyperframes
 cd examples/hello-video
 npm install
 npx hyperframes doctor

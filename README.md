@@ -43,6 +43,7 @@ npm run make
 - [AGENTS.md](AGENTS.md)：制作前确认、文本与分镜、音画同步及交付规则。
 - [VIDEO_DESCRIPTION_TEMPLATE.md](VIDEO_DESCRIPTION_TEMPLATE.md)：单条视频制作方案模板。
 - [video-skill-library.md](video-skill-library.md)：按任务内容选择 Skill 与创意检查。
+- [docs/skill-sources.md](docs/skill-sources.md)：每个 Skill 的公开上游、安装命令、许可证、平台限制与替代路径。
 - [visual-styles.md](visual-styles.md)、[motion-library.md](motion-library.md)：默认视觉方向、自定义风格和动效转译参考。
 - [docs/install.md](docs/install.md)：Windows、macOS、Linux 新机安装与分级验收。
 - [examples/hello-video](examples/hello-video)：可检查、可渲染的最小 HyperFrames 工程。

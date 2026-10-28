@@ -9,4 +9,6 @@
 | Qwen3-TTS | `voice/` 可调用使用者本机安装的 `qwen-tts` 和自行下载的 CustomVoice 模型；本仓库不分发模型、预置音频或依赖包。 | [官方代码仓库](https://github.com/QwenLM/Qwen3-TTS)与[0.6B CustomVoice 模型页](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice)。该模型页当前标注 Apache-2.0；改用其他模型时以对应模型页为准。 |
 | 火山引擎语音 API | `voice/` 通过用户自己的账号和密钥请求语音合成；合成文本会发送给服务端，真实调用可能计费。 | [HTTP V3 接口文档](https://docs.volcengine.com/docs/DoubaoVoice/HTTPChunkedSSEUnidirectionalStreaming-V3?lang=zh)与[计费说明](https://docs.volcengine.com/docs/doubao-voice/billing-overview?lang=zh)。具体服务协议、音色权限与价格以用户实际开通的资源为准。 |
 
+可选 Agent Skills 同样不随本仓库再分发。其固定来源、安装渠道与许可证状态记录在 [`skills/manifest.json`](skills/manifest.json) 和 [`docs/skill-sources.md`](docs/skill-sources.md)。其中 `NOASSERTION` 表示未作许可证断言，不代表允许复制或商用。
+
 使用自行添加的声音、参考音频、字体或画面素材时，应确认有权使用并按原始许可保留署名或其他要求。配音服务与模型的授权范围不等于对任何人物声音或身份的使用许可。

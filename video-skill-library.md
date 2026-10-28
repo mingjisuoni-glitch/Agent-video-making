@@ -2,7 +2,7 @@
 
 ## 目的
 
-本库把视频相关 Skill 组织为可复用的制作路由。它们由使用者自己的工具环境提供；本文件不复制第三方 Skill 的代码或说明。执行前先运行 `python -m tools.fetch_skills --check` 核对 [skills/manifest.json](skills/manifest.json)，确认 Skill 已安装、版本适用且许可允许当前用途；缺失时选用可验证的等效工作流。`CHECK_BEFORE_USE` 不是许可结论，必须回到实际来源复核。
+本库把视频相关 Skill 组织为可复用的制作路由。它们由使用者自己的工具环境提供；本文件不复制第三方 Skill 的代码或说明。执行前先运行 `python -m tools.fetch_skills --check` 核对 [skills/manifest.json](skills/manifest.json)，确认 Skill 已安装、版本适用且许可允许当前用途；完整下载渠道与平台限制见 [docs/skill-sources.md](docs/skill-sources.md)。缺失时选用可验证的等效工作流。`NOASSERTION` 不是许可结论，必须回到实际来源复核。
 
 目标不是堆更多动画，而是让每一段旁白都有可观看的画面行为、真实素材或明确的视觉隐喻，避免成片沦为“文字卡片 + 朗读”。
 
@@ -18,7 +18,7 @@
 | 网站、软件、App、后台或功能演示宣传片 | `video-shotcraft` | 以真实、已获准展示的页面截图为主，采用产品片镜头语法、2.5D 运镜和节拍剪辑。它使用 Remotion，属于独立产品片流程，不能把 React/Remotion 源码直接塞进 HyperFrames。 |
 | 用户提供实拍、录屏、采访、Vlog 或已有成片，需要剪辑增强 | `video-editing` | 优先用真实素材、B-roll、节奏剪辑、环境音和拟音补叙事；处理真实画面外观时同时遵守 HyperFrames 的 `media-use` 规则。 |
 | 软萌 CGI、绘本、水彩、赛博场景、角色或无法拍摄的视觉素材 | `imagegen` | 生成分镜级关键视觉、角色、道具或背景，再作为镜头素材使用；不把单张静图无限放大成整段视频。 |
-| 需要原生 AI 动态镜头、连续角色动作或特定镜头运动 | `h3-prompt-writing` + `minimax-h3` | 先把分镜改写为可执行的视频生成提示词，再提交生成任务；保持角色、场景、镜头和声音设计的连续性。 |
+| 需要原生 AI 动态镜头、连续角色动作或特定镜头运动 | `h3-prompt-writing` + 已配置的 H3 生成渠道（本机可选 `minimax-h3`） | 先把分镜改写为可执行的视频生成提示词，再通过实际可用且已核对条款的 API/插件提交；`minimax-h3` 是私有可选插件，不是下载项目后的默认能力。保持角色、场景、镜头和声音设计的连续性。 |
 | HTML 图形动画、信息可视化、HUD、字幕或动效转场 | `hyperframes:gsap` + `motion-library.md` | 仅将动效库中的参考效果转译为 HyperFrames/GSAP；不直接复制外部 React 或 Tailwind 代码。 |
 | 需要持续运动、镜头纵深、粒子、形变、遮罩、动态字体、角色微动或情绪化动效 | `motion-design` | 先用其动效原则、节奏、镜头、景深和叙事动机选择运动方案，再由 `hyperframes:gsap` 或明确选定的 Remotion 流程实现；不得把其框架示例直接混入 HyperFrames。 |
 | 需要独立的 React 程序化视频、复杂数据动画或可复用的 Remotion 交付 | `remotion` 系列 | 新建独立 Remotion 制作流，并在成片级别与 HyperFrames 合成衔接；不得把两个框架的源码直接混写到同一个组合中。 |

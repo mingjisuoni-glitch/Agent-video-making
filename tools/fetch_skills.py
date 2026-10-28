@@ -10,6 +10,10 @@ import re
 from pathlib import Path
 
 
+SOURCE_TYPES = {"git", "platform", "local-only"}
+AVAILABILITY_TYPES = {"public-git", "platform-builtin", "private-plugin", "local-only"}
+
+
 def validate_manifest(manifest: dict) -> list[str]:
     problems: list[str] = []
     skills = manifest.get("skills")
@@ -22,15 +26,43 @@ def validate_manifest(manifest: dict) -> list[str]:
         source = entry.get("source")
         if not isinstance(source, dict):
             problems.append(f"{name}: source is required")
-        elif source.get("type") == "git":
-            if not source.get("repo"):
-                problems.append(f"{name}: git source.repo is required")
-            if not re.fullmatch(r"[0-9a-fA-F]{40}", str(source.get("commit", ""))):
-                problems.append(f"{name}: git source must pin a 40-character commit")
-            if not re.fullmatch(r"[0-9a-fA-F]{64}", str(source.get("skill_sha256", ""))):
-                problems.append(f"{name}: git source must pin a 64-character skill_sha256")
+        else:
+            source_type = source.get("type")
+            if source_type not in SOURCE_TYPES:
+                problems.append(f"{name}: source.type must be one of {sorted(SOURCE_TYPES)}")
+            elif source_type == "git":
+                if not source.get("repo"):
+                    problems.append(f"{name}: git source.repo is required")
+                if not source.get("skill_path"):
+                    problems.append(f"{name}: git source.skill_path is required")
+                if not re.fullmatch(r"[0-9a-fA-F]{40}", str(source.get("commit", ""))):
+                    problems.append(f"{name}: git source must pin a 40-character commit")
+                if not re.fullmatch(r"[0-9a-fA-F]{64}", str(source.get("skill_sha256", ""))):
+                    problems.append(f"{name}: git source must pin a 64-character skill_sha256")
+            elif source_type == "platform":
+                if not source.get("platform"):
+                    problems.append(f"{name}: platform source.platform is required")
+                if not source.get("documentation_url"):
+                    problems.append(f"{name}: platform source.documentation_url is required")
+            elif source_type == "local-only":
+                if not source.get("name"):
+                    problems.append(f"{name}: local-only source.name is required")
+                if not entry.get("alternative"):
+                    problems.append(f"{name}: local-only source requires an alternative or explanation")
+        if entry.get("availability") not in AVAILABILITY_TYPES:
+            problems.append(f"{name}: availability must be one of {sorted(AVAILABILITY_TYPES)}")
+        if not entry.get("install_hint"):
+            problems.append(f"{name}: install_hint is required")
         if not entry.get("license"):
             problems.append(f"{name}: license is required")
+        installed_paths = entry.get("installed_paths", [name])
+        if not isinstance(installed_paths, list) or not installed_paths:
+            problems.append(f"{name}: installed_paths must be a non-empty array when provided")
+        else:
+            for installed_path in installed_paths:
+                path = Path(str(installed_path))
+                if path.is_absolute() or ".." in path.parts:
+                    problems.append(f"{name}: installed_paths entries must be safe relative paths")
     return problems
 
 
@@ -44,7 +76,16 @@ def inspect_manifest(manifest: dict, roots: list[Path] | None = None) -> list[di
     roots = roots or _candidate_roots()
     results: list[dict] = []
     for name, entry in manifest["skills"].items():
-        installed = next((root / name for root in roots if (root / name / "SKILL.md").is_file()), None)
+        relative_paths = [Path(item) for item in entry.get("installed_paths", [name])]
+        installed = next(
+            (
+                root / relative_path
+                for root in roots
+                for relative_path in relative_paths
+                if (root / relative_path / "SKILL.md").is_file()
+            ),
+            None,
+        )
         state = "ok" if installed else ("fail" if entry.get("required") else "warn")
         detail = None
         expected_hash = entry["source"].get("skill_sha256")
@@ -57,9 +98,11 @@ def inspect_manifest(manifest: dict, roots: list[Path] | None = None) -> list[di
             "name": name,
             "state": state,
             "required": bool(entry.get("required")),
+            "availability": entry["availability"],
             "installed_path": str(installed) if installed else None,
             "license": entry["license"],
             "source": entry["source"],
+            "install_hint": entry["install_hint"],
             "detail": detail,
         })
     return results
@@ -85,10 +128,19 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(f"[fail] {problem}")
         for item in results:
-            source = item["source"].get("repo") or item["source"].get("name", "manual")
-            print(f"[{item['state']:>4}] {item['name']:<24} {source} | {item['license']}")
-        if any(item["license"] == "CHECK_BEFORE_USE" for item in results):
-            print("[warn] CHECK_BEFORE_USE entries require a separate license review before installation or redistribution.")
+            source = (
+                item["source"].get("repo")
+                or item["source"].get("documentation_url")
+                or item["source"].get("name", "manual")
+            )
+            print(
+                f"[{item['state']:>4}] {item['name']:<24} "
+                f"{item['availability']} | {source} | {item['license']}"
+            )
+            if item["detail"]:
+                print(f"       detail: {item['detail']}")
+            if item["state"] != "ok":
+                print(f"       install: {item['install_hint']}")
     return code
 
 

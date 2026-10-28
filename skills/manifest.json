@@ -1,12 +1,15 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "skills": {
     "hyperframes": {
       "required": true,
+      "availability": "public-git",
+      "installed_paths": ["hyperframes"],
       "source": {
         "type": "git",
         "repo": "https://github.com/heygen-com/hyperframes.git",
         "commit": "8b1f88b3c06175f43fbdbe1af6e53933847cb195",
+        "skill_path": "skills/hyperframes/SKILL.md",
         "skill_sha256": "96f3793bd677dde345c5aca4aa6484334100a154e8a5d9e2ad07d69c9b9e2b0e",
         "cli_version": "0.8.210"
       },
@@ -15,49 +18,128 @@
     },
     "cinematic-director": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "cinematic-director"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "public-git",
+      "installed_paths": ["cinematic-director"],
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/cajias/agentic-video-skills.git",
+        "commit": "204cefd08bbb87fd4681f1f2b0dccbc444a978c1",
+        "skill_path": "plugins/cinematic-director/skills/cinematic-director/SKILL.md",
+        "skill_sha256": "abbeea208a2c10030b57ea3cb739d7d7dda67b3f4a0db2cb0ad900eb9e11a88e"
+      },
+      "license": "MIT",
+      "install_hint": "Use the source and pinned commit in this manifest; latest standalone channel: https://github.com/wuwangzhang1216/DirectorSKILL"
     },
     "video-shotcraft": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "video-shotcraft"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "public-git",
+      "installed_paths": ["video-shotcraft"],
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/Vincentwei1021/video-shotcraft.git",
+        "commit": "43bd349a136651865ecfa6ea1cf012f6e957d304",
+        "skill_path": "SKILL.md",
+        "skill_sha256": "a94f87f093d07c96ddf3245d442acece7ceb6c544035855c63e26a216a068820"
+      },
+      "license": "Apache-2.0",
+      "install_hint": "npx skills add https://github.com/Vincentwei1021/video-shotcraft"
     },
     "reverse-video-prompts": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "reverse-video-prompts"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "local-only",
+      "installed_paths": ["reverse-video-prompts"],
+      "source": {
+        "type": "local-only",
+        "name": "reverse-video-prompts"
+      },
+      "license": "NOASSERTION",
+      "install_hint": "No verified public installer exists for the exact project-tested Skill; omit it or provide an independently reviewed replacement.",
+      "alternative": "The similarly named public repositories found during review are not byte- or behavior-equivalent, so this project does not auto-install them."
     },
     "imagegen": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "imagegen"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "platform-builtin",
+      "installed_paths": [".system/imagegen", "imagegen"],
+      "source": {
+        "type": "platform",
+        "platform": "OpenAI Codex",
+        "documentation_url": "https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md",
+        "reference_repo": "https://github.com/openai/skills.git",
+        "reference_commit": "49f948faa9258a0c61caceaf225e179651397431",
+        "reference_skill_path": "skills/.system/imagegen/SKILL.md",
+        "reference_skill_sha256": "826d05b806d51fa81cd650f1c0854b0a1f7fbccd1b152c588ded1797a2e7218f"
+      },
+      "license": "NOASSERTION",
+      "install_hint": "Use Codex's built-in imagegen Skill and image_gen tool; copying SKILL.md alone does not provide the tool."
     },
     "h3-prompt-writing": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "h3-prompt-writing"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "public-git",
+      "installed_paths": ["h3-prompt-writing"],
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/MiniMax-AI/MiniMax-H3.git",
+        "commit": "d21241f0a4b3acbb34c97dae47fa417b7065e438",
+        "skill_path": "skills/h3-prompt-writing/SKILL.md",
+        "skill_sha256": "a7000443588ca3f145e3b3fd8900f14e0325dc460bd811268fac89a9dc8e56d0"
+      },
+      "license": "MiniMax-H3-Community-License",
+      "license_url": "https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE",
+      "install_hint": "npx skills add https://github.com/MiniMax-AI/MiniMax-H3 --skill h3-prompt-writing"
     },
     "minimax-h3": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "minimax-h3"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "private-plugin",
+      "installed_paths": ["minimax-h3"],
+      "source": {
+        "type": "platform",
+        "platform": "Codex personal plugin",
+        "documentation_url": "https://github.com/MiniMax-AI/cli/tree/main/cli/skill/h3-video"
+      },
+      "license": "NOASSERTION",
+      "install_hint": "The maintainer's minimax-h3 MCP plugin has no verified public package; configure your own provider/API or use MiniMax's public CLI h3-video Skill as a non-equivalent alternative."
     },
     "motion-design": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "motion-design"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "public-git",
+      "installed_paths": ["motion-design-agent", "motion-design"],
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/soilmass/motion-design-agent.git",
+        "commit": "132c9d59231cf0fd91964ee433ba9e7e0b3bbf6d",
+        "skill_path": "SKILL.md",
+        "skill_sha256": "d112dd46c0109d77e8a696ea3dfcbc8530682faf52d18a45524b4ffd65aab27c"
+      },
+      "license": "MIT",
+      "install_hint": "npx skills add https://github.com/soilmass/motion-design-agent --skill motion-design"
     },
     "remotion": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "remotion"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "public-git",
+      "installed_paths": ["motion-design-agent/skills/remotion", "remotion"],
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/soilmass/motion-design-agent.git",
+        "commit": "132c9d59231cf0fd91964ee433ba9e7e0b3bbf6d",
+        "skill_path": "skills/remotion/SKILL.md",
+        "skill_sha256": "ce34097de88721dc733c533b59840a9e9d340cde94b56d1c0bf4411d4cc6c577"
+      },
+      "license": "MIT",
+      "install_hint": "Install the motion-design-agent repository; remotion is bundled at skills/remotion. The Remotion runtime has its own separate license."
     },
     "video-editing": {
       "required": false,
-      "source": {"type": "agent-managed", "name": "video-editing"},
-      "license": "CHECK_BEFORE_USE"
+      "availability": "public-git",
+      "installed_paths": ["video-editing"],
+      "source": {
+        "type": "git",
+        "repo": "https://github.com/affaan-m/ECC.git",
+        "commit": "25278e7d7b6cf6e6a4e7a6c8e10f14ff22f0eb5b",
+        "skill_path": "skills/video-editing/SKILL.md",
+        "skill_sha256": "4ab8c9ef5a511e8a0de9ed375b9edbbfa74f23a0881519d2aceea67e7252b197"
+      },
+      "license": "MIT",
+      "install_hint": "npx skills add https://github.com/affaan-m/ECC --skill video-editing"
     }
   }
 }
-

@@ -12,5 +12,7 @@ python -m pip install -e .
 avm-doctor
 ```
 
+External Skills are not all bundled. See [Skill sources, installation channels, and limitations](docs/skill-sources.md) for verified upstream repositories, pinned files, licenses, platform-only capabilities, and non-equivalent fallbacks.
+
 The general method documents are Apache-2.0. The repository-provided voice workflow, code, and examples are noncommercial; see [LICENSE.md](LICENSE.md) for the file-level map and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for separate third-party terms.
 
