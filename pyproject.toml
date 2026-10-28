@@ -9,7 +9,7 @@ description = "Reusable video-production rules, plan templates, environment chec
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{name = "mingjisuoni-glitch"}]
-dependencies = []
+dependencies = ["jsonschema>=4.23,<5"]
 
 [project.optional-dependencies]
 tts = ["qwen-tts==0.1.1", "soundfile>=0.12,<0.14"]
@@ -19,6 +19,8 @@ avm-voice = "voice.cli:main"
 avm-captions = "voice.captions:main"
 avm-doctor = "tools.doctor:main"
 avm-preflight = "tools.preflight_video:main"
+avm-assemble = "voice.assemble:main"
+avm-manifest = "tools.delivery_manifest:main"
 
 [tool.setuptools]
 packages = ["voice", "tools"]

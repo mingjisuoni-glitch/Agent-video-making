@@ -1,0 +1,30 @@
+{
+  "canvas": {
+    "ratio": "16:9",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "style": {
+    "id": "story-driven-explainer"
+  },
+  "audio": "build/final.wav",
+  "captions": "build/captions.json",
+  "scenes": [
+    {
+      "id": "evidence",
+      "carrier": "真实产物",
+      "source": "先用音频建立时间轴"
+    },
+    {
+      "id": "boundaries",
+      "carrier": "停顿边界",
+      "source": "字幕决定场景切点"
+    },
+    {
+      "id": "verification",
+      "carrier": "严格检查",
+      "source": "证据随交付一起保存"
+    }
+  ]
+}

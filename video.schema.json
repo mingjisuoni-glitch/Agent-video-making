@@ -3,50 +3,90 @@
   "$id": "https://github.com/mingjisuoni-glitch/Agent-video-making/video.schema.json",
   "title": "Agent Video Making render preflight",
   "type": "object",
-  "required": ["ratio", "resolution", "duration_seconds", "fps", "style", "voice", "approval", "creative_checks"],
+  "additionalProperties": false,
+  "required": [
+    "ratio", "resolution", "duration_seconds", "fps", "total_frames",
+    "style", "voice", "approval", "creative_checks"
+  ],
+  "$defs": {
+    "evidenceCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "evidence"],
+      "properties": {
+        "ok": {"const": true},
+        "evidence": {"type": "string", "minLength": 1}
+      }
+    },
+    "captionEvidenceCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "evidence", "groups"],
+      "properties": {
+        "ok": {"const": true},
+        "evidence": {"type": "string", "minLength": 1},
+        "groups": {"type": "integer", "minimum": 0}
+      }
+    }
+  },
   "properties": {
     "ratio": {"type": "string", "pattern": "^[1-9][0-9]*:[1-9][0-9]*$"},
-    "resolution": {"type": "string", "pattern": "^[0-9]+x[0-9]+$"},
+    "resolution": {"type": "string", "pattern": "^[1-9][0-9]*x[1-9][0-9]*$"},
     "duration_seconds": {"type": "number", "exclusiveMinimum": 0},
-    "fps": {"type": "number", "exclusiveMinimum": 0},
+    "fps": {"type": "integer", "minimum": 1},
+    "total_frames": {"type": "integer", "minimum": 1},
     "style": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["id", "confirmed"],
-      "properties": {"id": {"type": "string", "minLength": 1}, "confirmed": {"const": true}}
-    },
-    "voice": {
-      "type": "object",
-      "required": ["mode", "confirmed"],
       "properties": {
-        "mode": {"enum": ["none", "volcano", "qwen3-local"]},
-        "voice_id": {"type": "string"},
+        "id": {"type": "string", "minLength": 1},
         "confirmed": {"const": true}
       }
     },
+    "voice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "confirmed"],
+      "properties": {
+        "mode": {"enum": ["none", "volcano", "qwen3-local"]},
+        "voice_id": {"type": "string", "minLength": 1},
+        "confirmed": {"const": true}
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["mode"],
+            "properties": {"mode": {"enum": ["volcano", "qwen3-local"]}}
+          },
+          "then": {"required": ["voice_id"]}
+        }
+      ]
+    },
     "approval": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["plan_approved"],
       "properties": {"plan_approved": {"const": true}}
     },
     "creative_checks": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "no_static_card_sequence", "action_per_narrative_unit", "motivated_transitions",
         "captions_synced_to_final_audio", "license_reviewed", "layered_assets_ready",
         "three_state_shots", "final_audio_locked"
       ],
       "properties": {
-        "no_static_card_sequence": {"const": true},
-        "action_per_narrative_unit": {"const": true},
-        "motivated_transitions": {"const": true},
-        "captions_synced_to_final_audio": {"const": true},
-        "license_reviewed": {"const": true},
-        "layered_assets_ready": {"const": true},
-        "three_state_shots": {"const": true},
-        "final_audio_locked": {"const": true}
-      },
-      "additionalProperties": false
+        "no_static_card_sequence": {"$ref": "#/$defs/evidenceCheck"},
+        "action_per_narrative_unit": {"$ref": "#/$defs/evidenceCheck"},
+        "motivated_transitions": {"$ref": "#/$defs/evidenceCheck"},
+        "captions_synced_to_final_audio": {"$ref": "#/$defs/captionEvidenceCheck"},
+        "license_reviewed": {"$ref": "#/$defs/evidenceCheck"},
+        "layered_assets_ready": {"$ref": "#/$defs/evidenceCheck"},
+        "three_state_shots": {"$ref": "#/$defs/evidenceCheck"},
+        "final_audio_locked": {"$ref": "#/$defs/evidenceCheck"}
+      }
     }
   }
 }
-

@@ -2,8 +2,15 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from tools.doctor import Check, exit_code_for, inspect_qwen_model, parse_node_major
+from tools.doctor import (
+    Check,
+    environment_snapshot,
+    exit_code_for,
+    inspect_qwen_model,
+    parse_node_major,
+)
 
 
 def write_fake_safetensors(path: Path, data_bytes: int) -> None:
@@ -113,6 +120,23 @@ class DoctorTests(unittest.TestCase):
                 root / "model-00001-of-00002.safetensors", 101 * 1024 * 1024
             )
             self.assertEqual(inspect_qwen_model(root).state, "fail")
+
+    def test_environment_snapshot_captures_runtime_versions(self):
+        def command(args, _root):
+            values = {
+                "node": "v22.1.0",
+                "npx": "0.8.210",
+            }
+            return 0, values.get(Path(args[0]).stem, "0.8.210")
+
+        with patch("tools.doctor._command", side_effect=command), patch(
+            "tools.doctor._package_version", return_value="0.1.1"
+        ):
+            snapshot = environment_snapshot(Path.cwd())
+        self.assertEqual(snapshot["node"], "v22.1.0")
+        self.assertEqual(snapshot["hyperframes"], "0.8.210")
+        self.assertEqual(snapshot["qwen-tts"], "0.1.1")
+        self.assertIn("python", snapshot)
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pip install -e .
       - run: ruff check voice tools tests
@@ -49,7 +50,37 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: examples/hello-video/package-lock.json
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: npm ci
         working-directory: examples/hello-video
       - run: npm run check
         working-directory: examples/hello-video
+      - run: npm run render
+        working-directory: examples/hello-video
+      - name: Verify rendered MP4 duration
+        working-directory: examples/hello-video
+        run: |
+          test -s out/hello.mp4
+          duration="$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 out/hello.mp4)"
+          python3 - "$duration" <<'PY'
+          import sys
+          duration = float(sys.argv[1])
+          assert abs(duration - 12.0) < 0.05, duration
+          PY
+
+  voiced-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y espeak-ng ffmpeg
+      - run: python -m pip install -e .
+      - run: bash examples/voiced-demo/scripts/build.sh

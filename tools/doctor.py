@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -40,6 +42,30 @@ def _command(command: list[str], cwd: Path) -> tuple[int, str]:
         return 127, str(error)
     output = (completed.stdout or completed.stderr).strip()
     return completed.returncode, output
+
+
+def _package_version(name: str) -> str:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return "not-installed"
+
+
+def environment_snapshot(root: Path) -> dict:
+    root = root.resolve()
+    node_code, node_text = _command(["node", "--version"], root)
+    npx = shutil.which("npx") or "npx"
+    hyperframes_code, hyperframes_text = _command(
+        [npx, "--yes", "--offline", "hyperframes@0.8.210", "--version"], root
+    )
+    return {
+        "python": sys.version.split()[0],
+        "node": node_text if node_code == 0 else "not-installed",
+        "hyperframes": hyperframes_text if hyperframes_code == 0 else "not-installed",
+        "qwen-tts": _package_version("qwen-tts"),
+        "agent-video-making": _package_version("agent-video-making"),
+        "platform": platform.platform(),
+    }
 
 
 def inspect_qwen_model(model_dir: Path | None) -> Check:

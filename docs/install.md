@@ -59,7 +59,7 @@ python -m pip install -U pip
 python -m pip install -e .
 ```
 
-核心包没有第三方运行时依赖。安装后运行：
+核心包会安装 JSON Schema 校验依赖，但不会自动安装 Qwen 模型或重型机器学习运行时。安装后运行：
 
 ```bash
 avm-doctor
@@ -131,13 +131,37 @@ avm-captions --audio outputs/final.wav --model small --language zh --json-output
 
 工具仅在实际静音间隔达到 0.28 秒时分组。超过字符建议但没有真实停顿的字幕会被标记并以退出码 2 提醒，不会按固定字数强拆。
 
+音频与字幕锁定后，用场景配置组装可检查工程：
+
+```bash
+avm-assemble scenes.json --out out/my-video
+cd out/my-video
+npm install
+npm run check
+```
+
+`scenes.json` 的最小结构见 `examples/voiced-demo/scenes.json`。工程总时长来自 ffprobe 读取的真实音频，镜头切点只落在字幕组起点。完整的 20 秒本地语音演练需要额外安装 `espeak-ng`，运行 `bash examples/voiced-demo/scripts/build.sh`；该脚本只做严格检查，不渲染视频。
+
 ## 7. 渲染前机器闸门
 
-复制 `examples/video-plan.example.json`，记录四项确认、明确批准和八项创意检查：
+复制 `examples/video-plan.example.json`，按 `video.schema.json` 记录四项确认、明确批准和八项带路径的证据对象：
 
 ```bash
 avm-preflight path/to/video-plan.json
 ```
 
-任何缺项都会返回非零退出码。这个闸门不能代替人工试听、素材许可核对和最终预览。
+证据文件必须存在、可解析且计数/时长自洽。HyperFrames 严格检查后，把实际报告再次送入门禁：
+
+```bash
+avm-preflight path/to/video-plan.json --with-checks .hyperframes/artifacts/checks/<id>.json
+```
+
+放行要求为 `ok=true`、`strict=true`、`browserSkipped=false`。最终渲染后生成交付记录：
+
+```bash
+avm-manifest --plan path/to/video-plan.json --video out/video.mp4 \
+  --audio outputs/final.wav --captions outputs/captions.json -o delivery.json
+```
+
+若未传 `--checks`，工具会寻找唯一的最新报告；有歧义时要求显式指定。任何输入、音频/字幕 provenance sidecar 缺失或哈希不一致都会非零退出。这个闸门不能代替人工试听、素材许可核对和最终预览。
 

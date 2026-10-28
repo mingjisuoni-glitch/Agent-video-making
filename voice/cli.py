@@ -13,6 +13,8 @@ from dataclasses import asdict
 from importlib import metadata
 from pathlib import Path
 
+from tools.artifacts import sha256_file, write_json_atomic
+
 from .contracts import VoiceSpec
 from .providers import Qwen3LocalProvider, VolcanoProvider, has_model_weights
 
@@ -78,18 +80,7 @@ def plan_batch(rows: list[dict], resume: bool) -> list[dict]:
 
 
 def file_sha256(path: Path, limit: int | None = None) -> str:
-    digest = hashlib.sha256()
-    remaining = limit
-    with path.open("rb") as handle:
-        while remaining is None or remaining > 0:
-            size = 1024 * 1024 if remaining is None else min(1024 * 1024, remaining)
-            chunk = handle.read(size)
-            if not chunk:
-                break
-            digest.update(chunk)
-            if remaining is not None:
-                remaining -= len(chunk)
-    return digest.hexdigest()
+    return sha256_file(path, limit=limit)
 
 
 def _package_version(name: str) -> str:
@@ -122,17 +113,26 @@ def _model_provenance(spec: VoiceSpec) -> dict:
                 "size": stat.st_size,
                 "mtime_ns": stat.st_mtime_ns,
                 "head_sha256": file_sha256(path, limit=1024 * 1024),
+                "sha256": file_sha256(path),
             })
     provenance["model_files"] = files
+    for target, source in (("model_sha256", "sha256"), ("head_sha256", "head_sha256")):
+        if files:
+            joined = "\n".join(f"{item['name']}:{item[source]}" for item in files).encode("utf-8")
+            provenance[target] = hashlib.sha256(joined).hexdigest()
+        else:
+            provenance[target] = None
     return provenance
 
 
-def segment_fingerprint(row: dict, voice_id: str, spec: VoiceSpec) -> str:
+def segment_fingerprint(
+    row: dict, voice_id: str, spec: VoiceSpec, runtime: dict | None = None,
+) -> str:
     payload = {
         "text": str(row["text"]).strip(),
         "voice_id": voice_id,
         "voice": asdict(spec),
-        "runtime": _model_provenance(spec),
+        "runtime": runtime if runtime is not None else _model_provenance(spec),
     }
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
@@ -199,8 +199,45 @@ def _provider(spec: VoiceSpec):
     return provider_type()
 
 
-def _synthesize(text: str, spec: VoiceSpec, output: Path) -> dict:
-    result = _provider(spec).synthesize(text, spec, output)
+def _audio_metadata(
+    output: Path,
+    spec: VoiceSpec,
+    voice_id: str,
+    duration: float,
+    runtime: dict,
+    fingerprint: str,
+) -> dict:
+    return {
+        "schema_version": 1,
+        "kind": "audio",
+        "provider": spec.provider,
+        "speaker": spec.speaker,
+        "voice_id": voice_id,
+        "fingerprint": fingerprint,
+        "audio_sha256": file_sha256(output),
+        "duration_seconds": duration,
+        "runtime": runtime,
+    }
+
+
+def _synthesize(
+    text: str,
+    spec: VoiceSpec,
+    voice_id: str,
+    output: Path,
+    provider_factory=_provider,
+    duration_reader=_duration_seconds,
+) -> dict:
+    runtime = _model_provenance(spec)
+    fingerprint = segment_fingerprint({"text": text}, voice_id, spec, runtime)
+    result = provider_factory(spec).synthesize(text, spec, output)
+    duration = duration_reader(output)
+    if duration is None or duration <= 0:
+        raise ValueError(f"synthesized audio is unreadable or empty: {output}")
+    write_json_atomic(
+        _resume_metadata(output),
+        _audio_metadata(output, spec, voice_id, duration, runtime, fingerprint),
+    )
     return {**asdict(result), "path": str(result.path)}
 
 
@@ -215,6 +252,7 @@ def execute_batch(
 ) -> list[dict]:
     """Execute planned rows while reusing one loaded provider per voice profile."""
     providers: dict[str, object] = {}
+    runtimes: dict[str, dict] = {}
     report: list[dict] = []
     for row in rows:
         voice_id = row.get("voice") or default_voice
@@ -223,7 +261,10 @@ def execute_batch(
         item = {"id": row["id"], "voice": voice_id, "output": row["output"], "status": "planned"}
         spec = profiles[voice_id]
         output = Path(row["output"])
-        fingerprint = segment_fingerprint(row, voice_id, spec)
+        if voice_id not in runtimes:
+            runtimes[voice_id] = _model_provenance(spec)
+        runtime = runtimes[voice_id]
+        fingerprint = segment_fingerprint(row, voice_id, spec, runtime)
         resumable, prior_duration = _can_resume(output, fingerprint, duration_reader) if resume else (False, None)
         if resumable:
             item.update({"status": "skipped", "duration_seconds": prior_duration, "fingerprint": fingerprint})
@@ -236,13 +277,11 @@ def execute_batch(
                 providers[voice_id] = provider
             result = provider.synthesize(str(row["text"]).strip(), spec, output)
             duration = duration_reader(output)
-            metadata = {
-                "fingerprint": fingerprint,
-                "audio_sha256": file_sha256(output),
-                "duration_seconds": duration,
-            }
-            _resume_metadata(output).write_text(
-                json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            if duration is None or duration <= 0:
+                raise ValueError(f"synthesized audio is unreadable or empty: {output}")
+            write_json_atomic(
+                _resume_metadata(output),
+                _audio_metadata(output, spec, voice_id, duration, runtime, fingerprint),
             )
             item.update({
                 "status": "completed",
@@ -315,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         print(json.dumps({"dry_run": True, "voice": args.voice, "output": str(args.output), "characters": len(text)}))
         return 0
-    result = _synthesize(text, spec, args.output)
+    result = _synthesize(text, spec, args.voice, args.output)
     if args.duration_report:
         payload = {"result": result, "duration_seconds": _duration_seconds(args.output)}
         args.duration_report.parent.mkdir(parents=True, exist_ok=True)

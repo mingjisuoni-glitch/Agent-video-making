@@ -1,10 +1,12 @@
+import contextlib
+import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from voice.captions import format_srt, group_words, transcribe
+from voice.captions import format_srt, group_words, main, transcribe
 
 
 class CaptionTests(unittest.TestCase):
@@ -55,6 +57,29 @@ class CaptionTests(unittest.TestCase):
             "voice.captions.subprocess.run", return_value=completed
         ), self.assertRaisesRegex(ValueError, "transcriptPath"):
             transcribe(Path("audio.wav"), "small", "zh")
+
+    def test_caption_command_writes_transcript_provenance_sidecar(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            transcript = root / "transcript.json"
+            output = root / "captions.json"
+            transcript.write_text(json.dumps({"words": [
+                {"text": "第一句", "start": 0.0, "end": 0.5},
+                {"text": "第二句", "start": 1.0, "end": 1.5},
+            ]}, ensure_ascii=False), encoding="utf-8")
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = main([
+                    "--transcript", str(transcript),
+                    "--json-output", str(output),
+                    "--srt-output", str(root / "captions.srt"),
+                ])
+            self.assertEqual(code, 0)
+            sidecar = json.loads(Path(f"{output}.avm.json").read_text(encoding="utf-8"))
+            self.assertEqual(sidecar["source_kind"], "transcript")
+            self.assertEqual(sidecar["groups"], 2)
+            self.assertEqual(sidecar["over_limit"], 0)
+            self.assertRegex(sidecar["transcript_sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(sidecar["captions_sha256"], r"^[0-9a-f]{64}$")
 
 
 if __name__ == "__main__":

@@ -9,7 +9,6 @@ import os
 import re
 from pathlib import Path
 
-
 SOURCE_TYPES = {"git", "platform", "local-only"}
 AVAILABILITY_TYPES = {"public-git", "platform-builtin", "private-plugin", "local-only"}
 
