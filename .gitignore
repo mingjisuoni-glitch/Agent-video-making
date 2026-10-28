@@ -10,6 +10,7 @@ models/
 outputs/
 out/
 .hyperframes/
+.thumbnails/
 node_modules/
 duration-report.json
 *.egg-info/
