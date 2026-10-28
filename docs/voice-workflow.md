@@ -2,7 +2,7 @@
 
 ## 使用范围
 
-**本项目提供的配音方案不可用于商业用途。**本限制覆盖本仓库的配音工作流、接口实现和示例音色配置；它是本项目对该方案的使用要求，不代表火山引擎语音 API 或 Qwen3-TTS 的官方许可条款。使用第三方服务、模型和音色时，还须分别遵守其协议与授权要求。需要商业使用本方案时，应先取得项目作者的单独授权。
+**仅本项目提供的配音方案不可用于商业用途。**这里的配音方案包括本文件的配音工作流、`voice/` 接口实现和 `voices.example.json` 示例音色配置；本限制不适用于仓库中的其他视频制作规则、模板、风格或动效文档。具体配音模型、音色和 API 的使用条件，请参考所选模型及服务的官方说明，例如 [Qwen3-TTS CustomVoice 模型页](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice)和[火山引擎语音服务文档](https://docs.volcengine.com/docs/DoubaoVoice/HTTPChunkedSSEUnidirectionalStreaming-V3?lang=zh)。本项目的非商业限制是对本配音方案的单独要求，不代表第三方模型或服务也一律禁止商用；商业使用本方案需另行取得项目作者授权。
 
 ## 制作顺序
 
