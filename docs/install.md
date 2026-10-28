@@ -27,7 +27,7 @@ python --version
 
 - Windows：`winget install --id Git.Git -e`、`winget install OpenJS.NodeJS.LTS`、`winget install Gyan.FFmpeg`，Python 从 python.org 或 Microsoft Store 安装。
 - macOS：先安装 Homebrew，再运行 `brew install git node@22 ffmpeg python@3.12`；Apple Silicon 通常还要执行 `echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc`，Intel Mac 将 `/opt/homebrew` 换成 `/usr/local`。
-- Ubuntu/Debian：`sudo apt update && sudo apt install -y git curl ffmpeg python3 python3-venv`，再运行 `curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs`。
+- Ubuntu/Debian：先运行 `sudo apt update && sudo apt install -y git curl ffmpeg python3 python3-venv`，再按 NodeSource 当前指引执行 `curl -fsSL https://deb.nodesource.com/setup_22.x -o nodesource_setup.sh && sudo -E bash nodesource_setup.sh && sudo apt install -y nodejs`。
 
 如果包管理器提供的 Node 仍低于 22，先升级 Node，不要继续排查 HyperFrames。
 
