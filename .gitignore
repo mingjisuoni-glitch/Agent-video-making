@@ -5,8 +5,14 @@ voices.local.json
 __pycache__/
 *.pyc
 .venv/
+.venv*/
 models/
 outputs/
+out/
+.hyperframes/
+node_modules/
+duration-report.json
+*.egg-info/
 *.wav
 *.mp3
 *.ogg

@@ -22,14 +22,14 @@
     },
     "qwen-suspense": {
       "provider": "qwen3-local",
-      "speaker": "Ryan",
+      "speaker": "Serena",
       "display_name": "悬疑感",
       "language": "Chinese",
       "seed": 43103
     },
     "qwen-bright": {
       "provider": "qwen3-local",
-      "speaker": "Aiden",
+      "speaker": "Vivian",
       "display_name": "明亮调侃",
       "language": "Chinese",
       "seed": 43104

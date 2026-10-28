@@ -11,13 +11,17 @@ import json
 import os
 import urllib.request
 import uuid
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from .contracts import SynthesisResult, VoiceSpec
 
-
 VOLCANO_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
+
+
+def has_model_weights(model_dir: Path) -> bool:
+    """Accept single-file and sharded safetensors checkpoints."""
+    return any(path.is_file() for path in model_dir.glob("*.safetensors"))
 
 
 class VolcanoProvider:
@@ -113,7 +117,7 @@ class Qwen3LocalProvider:
             raise ValueError("Qwen3 output must use the .wav extension")
         if voice.speech_rate != 0:
             raise ValueError("Qwen3 CustomVoice has no numeric speech_rate control")
-        if not (self.model_dir / "model.safetensors").is_file():
+        if not has_model_weights(self.model_dir):
             raise FileNotFoundError("Set QWEN3_TTS_MODEL_DIR to a downloaded CustomVoice model")
         config_path = self.model_dir / "config.json"
         if not config_path.is_file():

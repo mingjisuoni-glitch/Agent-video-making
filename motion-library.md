@@ -82,4 +82,4 @@
 - [ ] 没有使用 `repeat: -1`
 - [ ] 视觉光效不会遮挡标题、字幕或关键画面
 - [ ] 动效使用的颜色、字体和材质可追溯到使用者的品牌规范或 `visual-styles.md`
-- [ ] 写入 HTML 后运行 `npx hyperframes lint`、`npx hyperframes validate` 和必要的 `npx hyperframes inspect`
+- [ ] 写入 HTML 后先用 `npx hyperframes lint` 快速迭代，最终只运行完整门槛 `npx hyperframes check`；新指引不再使用已弃用的 `validate`、`inspect`、`layout` 别名

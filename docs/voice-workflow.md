@@ -21,7 +21,29 @@
 
 本地 Qwen 适配器直接读取用户自行下载的 CustomVoice 模型，输出 WAV。0.6B 的 `instruct` 会被官方实现忽略，因此接口会在这种配置下报错；如需指令控制语气，改用支持该功能的 1.7B CustomVoice。Qwen 不提供火山接口的数值语速参数，接口也不会假装已应用它。
 
-接口不生成字幕、不估算词级时间戳，也不自动决定一个音色是否适合整篇文案。音频和字幕同步需要在最终音频产生后另做检查。
+选择预置 speaker 时优先匹配口播语言和母语能力。中文示例使用 `Dylan`、`Uncle_Fu`、`Serena`、`Vivian`；换成其他 speaker 前先用完整中文短段试听专名、数字、儿化和句尾，不凭英文音色名推断中文表现。
+
+接口不会从文案估算时间戳，也不会自动决定一个音色是否适合整篇文案。`voice.captions` 会在**最终音频**上调用 HyperFrames 转写，取得真实词级时间戳后按自然停顿分组；它不重新实现强制对齐，也不会在没有停顿时按固定字数硬拆。
+
+## CLI 能力
+
+```bash
+# 列出所有音色
+avm-voice --voices voices.example.json --list-voices
+
+# 单段试跑，不调用 API 或模型
+avm-voice --voices voices.example.json --voice qwen-accent --text-file approved.txt --output outputs/test.wav --dry-run
+
+# JSONL 批量任务；已有非空输出可断点跳过
+avm-voice --voices voices.local.json --batch segments.jsonl --resume --duration-report outputs/durations.json
+
+# 最终音频转词级时间戳，再按停顿生成 JSON 与 SRT
+avm-captions --audio outputs/final.wav --model small --language zh --json-output outputs/captions.json --srt-output outputs/captions.srt
+```
+
+批量 JSONL 的每行至少包含 `id`、`text`、`output`，可以单独指定 `voice`；未单独指定时使用命令行的 `--voice`。`--resume` 只跳过已经存在且非空的输出，不把零字节或失败文件当成完成。MP3 时长报告需要 FFprobe。
+
+中文转写必须显式选择不带 `.en` 的多语言模型并设置 `--language zh`；HyperFrames 默认的英语模型会把非英语音频转成英文。任何重新配音、拼接、变速或剪辑都会使旧字幕时间失效，必须重新运行。
 
 参考：[火山引擎 HTTP V3 文档](https://docs.volcengine.com/docs/DoubaoVoice/HTTPChunkedSSEUnidirectionalStreaming-V3?lang=zh)；[Qwen3-TTS 官方仓库](https://github.com/QwenLM/Qwen3-TTS)。
 

@@ -12,7 +12,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .contracts import VoiceSpec
-from .providers import Qwen3LocalProvider, VolcanoProvider
+from .providers import Qwen3LocalProvider, VolcanoProvider, has_model_weights
 
 
 def check_voice(spec: VoiceSpec) -> list[str]:
@@ -34,7 +34,7 @@ def check_voice(spec: VoiceSpec) -> list[str]:
         if spec.speech_rate != 0:
             problems.append("Qwen3 CustomVoice has no numeric speech_rate control")
         model_dir = Path(os.environ.get("QWEN3_TTS_MODEL_DIR", ""))
-        if not (model_dir / "model.safetensors").is_file() and not list(model_dir.glob("*.safetensors")):
+        if not has_model_weights(model_dir):
             problems.append("Download a CustomVoice model and set QWEN3_TTS_MODEL_DIR")
         config_path = model_dir / "config.json"
         if config_path.is_file():
@@ -118,6 +118,39 @@ def _synthesize(text: str, spec: VoiceSpec, output: Path) -> dict:
     return {**asdict(result), "path": str(result.path)}
 
 
+def execute_batch(
+    rows: list[dict],
+    profiles: dict[str, VoiceSpec],
+    default_voice: str | None,
+    dry_run: bool,
+    provider_factory=_provider,
+    duration_reader=_duration_seconds,
+) -> list[dict]:
+    """Execute planned rows while reusing one loaded provider per voice profile."""
+    providers: dict[str, object] = {}
+    report: list[dict] = []
+    for row in rows:
+        voice_id = row.get("voice") or default_voice
+        if not voice_id or voice_id not in profiles:
+            raise ValueError(f"Unknown or missing voice for batch row {row['id']}")
+        item = {"id": row["id"], "voice": voice_id, "output": row["output"], "status": "planned"}
+        if not dry_run:
+            spec = profiles[voice_id]
+            provider = providers.get(voice_id)
+            if provider is None:
+                provider = provider_factory(spec)
+                providers[voice_id] = provider
+            output = Path(row["output"])
+            result = provider.synthesize(str(row["text"]).strip(), spec, output)
+            item.update({
+                "status": "completed",
+                "result": {**asdict(result), "path": str(result.path)},
+                "duration_seconds": duration_reader(output),
+            })
+        report.append(item)
+    return report
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Synthesize approved narration segments")
     parser.add_argument("--voices", type=Path, default=Path("voices.example.json"))
@@ -149,16 +182,10 @@ def main(argv: list[str] | None = None) -> int:
             rows = plan_batch(_read_jsonl(args.batch), args.resume)
         except (OSError, ValueError) as error:
             parser.error(str(error))
-        report: list[dict] = []
-        for row in rows:
-            voice_id = row.get("voice") or args.voice
-            if not voice_id or voice_id not in profiles:
-                parser.error(f"Unknown or missing voice for batch row {row['id']}")
-            item = {"id": row["id"], "voice": voice_id, "output": row["output"], "status": "planned"}
-            if not args.dry_run:
-                result = _synthesize(str(row["text"]).strip(), profiles[voice_id], Path(row["output"]))
-                item.update({"status": "completed", "result": result, "duration_seconds": _duration_seconds(Path(row["output"]))})
-            report.append(item)
+        try:
+            report = execute_batch(rows, profiles, args.voice, args.dry_run)
+        except ValueError as error:
+            parser.error(str(error))
         payload = {"dry_run": args.dry_run, "segments": report}
         if args.duration_report:
             args.duration_report.parent.mkdir(parents=True, exist_ok=True)

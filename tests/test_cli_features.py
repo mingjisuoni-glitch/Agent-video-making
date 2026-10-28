@@ -3,7 +3,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from voice.cli import load_profiles, plan_batch
+from voice.cli import execute_batch, load_profiles, plan_batch
+from voice.contracts import SynthesisResult, VoiceSpec
 
 
 class VoiceCliFeatureTests(unittest.TestCase):
@@ -28,6 +29,29 @@ class VoiceCliFeatureTests(unittest.TestCase):
             ]
             planned = plan_batch(rows, resume=True)
             self.assertEqual([item["id"] for item in planned], ["002"])
+
+    def test_batch_reuses_one_provider_for_the_same_voice(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            created = []
+
+            class FakeProvider:
+                def synthesize(self, _text, spec, output):
+                    output.write_bytes(b"audio")
+                    return SynthesisResult(output, spec.provider, spec.speaker, "wav", 24000)
+
+            def factory(_spec):
+                created.append(object())
+                return FakeProvider()
+
+            rows = [
+                {"id": "001", "text": "第一句", "output": str(root / "001.wav")},
+                {"id": "002", "text": "第二句", "output": str(root / "002.wav")},
+            ]
+            profiles = {"demo": VoiceSpec("qwen3-local", "Vivian")}
+            report = execute_batch(rows, profiles, "demo", False, factory, lambda _path: 1.0)
+            self.assertEqual(len(created), 1)
+            self.assertEqual([item["status"] for item in report], ["completed", "completed"])
 
 
 if __name__ == "__main__":

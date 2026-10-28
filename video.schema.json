@@ -35,7 +35,17 @@
         "captions_synced_to_final_audio", "license_reviewed", "layered_assets_ready",
         "three_state_shots", "final_audio_locked"
       ],
-      "additionalProperties": {"type": "boolean"}
+      "properties": {
+        "no_static_card_sequence": {"const": true},
+        "action_per_narrative_unit": {"const": true},
+        "motivated_transitions": {"const": true},
+        "captions_synced_to_final_audio": {"const": true},
+        "license_reviewed": {"const": true},
+        "layered_assets_ready": {"const": true},
+        "three_state_shots": {"const": true},
+        "final_audio_locked": {"const": true}
+      },
+      "additionalProperties": false
     }
   }
 }

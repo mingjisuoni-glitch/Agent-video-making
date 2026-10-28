@@ -6,7 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-
 REQUIRED_CREATIVE_CHECKS = (
     "no_static_card_sequence",
     "action_per_narrative_unit",

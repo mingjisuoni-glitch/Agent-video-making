@@ -18,6 +18,14 @@ class SkillManifestTests(unittest.TestCase):
         }}}
         self.assertEqual(validate_manifest(manifest), [])
 
+    def test_git_source_must_pin_a_full_commit(self):
+        manifest = {"skills": {"hyperframes": {
+            "required": True,
+            "source": {"type": "git", "repo": "https://example.invalid/repo", "commit": "main"},
+            "license": "Apache-2.0",
+        }}}
+        self.assertTrue(any("40-character commit" in item for item in validate_manifest(manifest)))
+
 
 if __name__ == "__main__":
     unittest.main()

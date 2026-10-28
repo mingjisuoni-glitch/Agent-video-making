@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 
@@ -16,8 +17,14 @@ def validate_manifest(manifest: dict) -> list[str]:
         if not isinstance(entry, dict):
             problems.append(f"{name}: entry must be an object")
             continue
-        if not isinstance(entry.get("source"), dict):
+        source = entry.get("source")
+        if not isinstance(source, dict):
             problems.append(f"{name}: source is required")
+        elif source.get("type") == "git":
+            if not source.get("repo"):
+                problems.append(f"{name}: git source.repo is required")
+            if not re.fullmatch(r"[0-9a-fA-F]{40}", str(source.get("commit", ""))):
+                problems.append(f"{name}: git source must pin a 40-character commit")
         if not entry.get("license"):
             problems.append(f"{name}: license is required")
     return problems

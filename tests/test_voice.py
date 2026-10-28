@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from voice import Qwen3LocalProvider, VoiceSpec, VolcanoProvider
 from voice.cli import check_voice
+from voice.providers import has_model_weights
 
 
 class FakeResponse:
@@ -70,6 +71,13 @@ class VoiceProviderTests(unittest.TestCase):
             Qwen3LocalProvider().synthesize(
                 "测试", VoiceSpec("qwen3-local", "Dylan", speech_rate=10), Path("voice.wav")
             )
+
+    def test_qwen_detects_sharded_safetensors_weights(self):
+        with tempfile.TemporaryDirectory() as folder:
+            model_dir = Path(folder)
+            (model_dir / "model-00001-of-00002.safetensors").touch()
+            (model_dir / "model-00002-of-00002.safetensors").touch()
+            self.assertTrue(has_model_weights(model_dir))
 
 
 if __name__ == "__main__":

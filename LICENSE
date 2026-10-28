@@ -1,0 +1,8 @@
+This repository uses file-scoped licenses rather than one license for every file.
+
+General video-production rules, templates, and non-voice documentation are
+licensed under Apache-2.0. The repository-provided voice workflow, source code,
+tests, and example voice configuration are restricted to noncommercial use.
+
+The authoritative file-by-file map and required notices are in LICENSE.md.
+Full license texts are in LICENSES/.

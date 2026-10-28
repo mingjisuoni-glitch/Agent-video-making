@@ -8,7 +8,6 @@ import re
 import subprocess
 from pathlib import Path
 
-
 PAUSE_GAP = 0.28
 MAX_CHARS = 18
 _CJK = re.compile(r"[\u3400-\u9fff]")
@@ -78,7 +77,7 @@ def _load_words(path: Path) -> list[dict]:
     if isinstance(payload, dict):
         payload = payload.get("words", [])
     if not isinstance(payload, list):
-        raise ValueError("transcript must be a word array or an object containing words")
+        raise TypeError("transcript must be a word array or an object containing words")
     return payload
 
 
