@@ -1,0 +1,35 @@
+{
+  "voices": {
+    "volcano-example": {
+      "provider": "volcano",
+      "speaker": "zh_female_xiaohe_uranus_bigtts",
+      "resource_id": "seed-tts-2.0",
+      "speech_rate": 0
+    },
+    "口音感": {
+      "provider": "qwen3-local",
+      "speaker": "Dylan",
+      "language": "Chinese",
+      "seed": 43101
+    },
+    "冷幽默": {
+      "provider": "qwen3-local",
+      "speaker": "Uncle_Fu",
+      "language": "Chinese",
+      "seed": 43102
+    },
+    "悬疑感": {
+      "provider": "qwen3-local",
+      "speaker": "Ryan",
+      "language": "Chinese",
+      "seed": 43103
+    },
+    "明亮调侃": {
+      "provider": "qwen3-local",
+      "speaker": "Aiden",
+      "language": "Chinese",
+      "seed": 43104
+    }
+  }
+}
+

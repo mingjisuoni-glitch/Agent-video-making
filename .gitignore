@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.venv/
+models/
+outputs/
+*.wav
+*.mp3
+*.ogg
+*.pcm
+
